@@ -70,6 +70,7 @@ export function syncChipHTML(state) {
   if (syncing) { label = "جارٍ الحفظ…"; mode = "syncing"; }
   else if (!online) { label = "غير متصل — حفظ محلي"; mode = "offline"; }
   else if (configured && state.realtime) { label = "مزامنة لحظية"; mode = "synced"; }
+  else if (configured && state.shared) { label = "مزامنة مشتركة"; mode = "synced"; }
   else if (configured && state.pending > 0) { label = `بانتظار المزامنة (${fmt(state.pending)})`; mode = "pending"; }
   else if (configured && state.shared) { label = state.lastSync ? `مزامنة مشتركة · ${relativeTime(state.lastSync)}` : "مزامنة مشتركة"; mode = "synced"; }
   else if (configured && state.lastSync) { label = `متصل · ${relativeTime(state.lastSync)}`; mode = "synced"; }
@@ -84,7 +85,7 @@ export function applySyncChip(state) {
   chip.dataset.state = mode;
   const l = $("#syncLabel"); if (l) l.textContent = label;
   const p = $("#syncPending");
-  if (p) { p.hidden = !(state?.configured && !state?.realtime && state?.pending > 0); p.textContent = state?.pending > 0 ? fmt(state.pending) : ""; }
+  if (p) { p.hidden = !(state?.configured && !state?.shared && !state?.realtime && state?.pending > 0); p.textContent = state?.pending > 0 ? fmt(state.pending) : ""; }
   chip.title = state?.error || label;
 }
 
