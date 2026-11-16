@@ -416,8 +416,14 @@ export function renderAttendance(root, mode, stageId) {
       const ic = st === "absent" ? (exc ? "file" : "x") : st === "late" ? "clock" : "check";
       const lateTime = st === "late" ? (state.lateTimes.get(s.id) || "") : "";
       const label = st === "absent" ? (exc ? "غائب بعذر" : "غائب بدون عذر") : st === "late" ? (lateTime ? `متأخر ${lateTime}` : "متأخر") : "حاضر";
+      const arcId = `arc-${String(s.id).replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+      const fontSize = s.name.length > 30 ? 9.5 : s.name.length > 23 ? 11 : s.name.length > 17 ? 12.5 : 14;
+      const curvedName = roundCards
+        ? `<svg class="round-name" viewBox="0 0 200 200" aria-hidden="true"><defs><path id="${arcId}" d="M 30 126 A 70 70 0 0 1 170 126"></path></defs><text direction="rtl" style="font-size:${fontSize}px"><textPath href="#${arcId}" startOffset="50%" text-anchor="middle">${escapeHtml(s.name)}</textPath></text></svg>`
+        : "";
       return `<button type="button" class="student-card ${roundCards ? "round-card" : ""} ${cls}" data-student="${s.id}" aria-pressed="${st !== "present"}" aria-label="${escapeHtml(s.name)} — ${label}" title="نقرة: ${st === "present" ? (state.mode === "late" ? "متأخر" : "غياب بدون عذر") : "حاضر"}${state.mode === "absence" ? " · نقرتان: غياب بعذر" : ""}">
-        <span class="s-index">${escapeHtml(s.studentId.slice(-4))}</span>
+        ${curvedName}
+        ${roundCards ? `<span class="s-id">${escapeHtml(s.studentId.slice(-4))}</span>` : `<span class="s-index">${escapeHtml(s.studentId.slice(-4))}</span>`}
         <span class="s-state">${icon(ic, 22)}</span>
         <span class="s-body"><span class="s-name">${escapeHtml(s.name)}</span><span class="s-meta">${escapeHtml(classLabel(s.classNo, s.stageId))} · ${label}</span></span>
       </button>`;

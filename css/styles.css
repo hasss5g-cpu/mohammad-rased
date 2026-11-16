@@ -1011,3 +1011,89 @@ select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csv
   .student-card.round-card .s-name { font-size: .82rem; -webkit-line-clamp: 3; max-height: 3.54em; }
   .student-card.round-card .s-meta { font-size: .56rem; -webkit-line-clamp: 2; }
 }
+
+/* ---------------- دوائر أصغر واسم منحني ---------------- */
+.students-grid.round-cards {
+  grid-template-columns: repeat(auto-fill, minmax(126px, 146px));
+  justify-content: center;
+  align-items: start;
+  gap: 16px;
+}
+.student-card.round-card {
+  width: 100%;
+  max-width: 146px;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  margin-inline: auto;
+  overflow: hidden;
+  isolation: isolate;
+}
+.student-card.round-card .s-index { display: none; }
+.student-card.round-card .s-id {
+  position: absolute;
+  bottom: 7px;
+  inset-inline: 0;
+  z-index: 2;
+  text-align: center;
+  font-size: .52rem;
+  letter-spacing: .3px;
+  opacity: .62;
+}
+.student-card.round-card .s-body {
+  position: absolute;
+  inset: auto 9px 21px;
+  width: auto;
+  z-index: 2;
+  gap: 1px;
+}
+.student-card.round-card .s-name { display: none; }
+.student-card.round-card .s-meta {
+  font-size: .56rem;
+  line-height: 1.15;
+  max-height: 2.3em;
+  -webkit-line-clamp: 2;
+}
+.student-card.round-card .s-state {
+  top: 6px;
+  inset-inline-end: 8px;
+  width: 24px;
+  height: 24px;
+  z-index: 3;
+}
+.round-name {
+  position: absolute;
+  inset: 2%;
+  width: 96%;
+  height: 96%;
+  z-index: 1;
+  pointer-events: none;
+  overflow: visible;
+}
+.round-name text {
+  fill: currentColor;
+  font-family: var(--font);
+  font-weight: 800;
+  letter-spacing: -.25px;
+}
+@media (max-width: 600px) {
+  .students-grid.round-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-items: center;
+    column-gap: 12px;
+    row-gap: 16px;
+    padding: 10px 8px 16px;
+  }
+  .student-card.round-card {
+    width: min(128px, 100%);
+    max-width: 128px;
+    padding: 0;
+    gap: 0;
+  }
+  .student-card.round-card .s-body { inset: auto 7px 19px; }
+  .student-card.round-card .s-meta { font-size: .53rem; }
+  .student-card.round-card .s-id { bottom: 5px; font-size: .48rem; }
+  .student-card.round-card .s-state { top: 5px; inset-inline-end: 6px; width: 22px; height: 22px; }
+}
+
+.students-grid.round-cards { grid-auto-rows: auto; }
+
