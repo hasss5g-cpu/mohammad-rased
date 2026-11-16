@@ -196,23 +196,46 @@ async function boot() {
   }
   await route();
   let remoteRefreshTimer = null;
+  let remotePending = false;
+  let remoteObserver = null;
+  let remoteFocusBound = false;
+  const remoteBusy = () => !!document.querySelector(".modal-overlay") ||
+    (document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName));
+  const watchRemote = () => {
+    if (remoteObserver) return;
+    remoteObserver = new MutationObserver(() => {
+      if (remotePending && !remoteBusy()) {
+        remoteObserver.disconnect();
+        remoteObserver = null;
+        scheduleRemoteRefresh();
+      }
+    });
+    remoteObserver.observe(document.body, { childList: true, subtree: true });
+    if (!remoteFocusBound) {
+      remoteFocusBound = true;
+      document.addEventListener("focusout", () => {
+        setTimeout(() => { if (remotePending && !remoteBusy()) scheduleRemoteRefresh(); }, 80);
+      }, true);
+    }
+  };
+  const applyRemoteRefresh = async () => {
+    if (!remotePending) return;
+    if (remoteBusy()) { watchRemote(); return; }
+    remotePending = false;
+    if (remoteObserver) { remoteObserver.disconnect(); remoteObserver = null; }
+    const y = window.scrollY;
+    try { await route(); } catch (e) { console.warn("remote refresh", e); }
+    requestAnimationFrame(() => window.scrollTo({ top: y, behavior: "auto" }));
+  };
+  const scheduleRemoteRefresh = () => {
+    clearTimeout(remoteRefreshTimer);
+    remotePending = true;
+    if (remoteBusy()) { watchRemote(); return; }
+    remoteRefreshTimer = setTimeout(applyRemoteRefresh, 300);
+  };
   window.addEventListener("rased:remote", e => {
     if (!e.detail?.changed) return;
-    const path = parseHash();
-    const liveView = /^\/(?:$|summary|absentees|recurring|stage|entry|attendance)/.test(path);
-    if (liveView && !document.querySelector(".modal-overlay")) {
-      clearTimeout(remoteRefreshTimer);
-      remoteRefreshTimer = setTimeout(async () => {
-        const y = window.scrollY;
-        await route();
-        requestAnimationFrame(() => window.scrollTo({ top: y, behavior: "auto" }));
-      }, 300);
-    } else {
-      toast("وصلت بيانات جديدة من جهاز آخر.", {
-        type: "info", duration: 6500,
-        action: { label: "تحديث", onClick: () => route() }
-      });
-    }
+    scheduleRemoteRefresh();
   });
   initSync().then(st => {
     window.__rasedSync = st;
