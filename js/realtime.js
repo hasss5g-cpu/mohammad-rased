@@ -154,6 +154,7 @@ function connect() {
   client = c;
   clearTimeout(connectTimer);
   connectTimer = setTimeout(() => {
+    if (client !== c) return;
     if (!c.connected) {
       state.error = "تعذر الاتصال بقناة التزامن اللحظي";
       emit();
@@ -166,6 +167,7 @@ function connect() {
     }
   }, 12000);
   c.on("connect", () => {
+    if (client !== c) return;
     attempts = 0;
     state.connected = true;
     state.error = "";
@@ -177,18 +179,21 @@ function connect() {
     });
     setTimeout(() => { publishState(); requestState(); }, 300);
   });
-  c.on("message", (topic, payload) => { onMessage(topic, payload).catch(() => { }); });
+  c.on("message", (topic, payload) => { if (client === c) onMessage(topic, payload).catch(() => { }); });
   c.on("close", () => {
+    if (client !== c) return;
     state.connected = false;
     emit();
     setRealtimeActive(false);
   });
   c.on("offline", () => {
+    if (client !== c) return;
     state.connected = false;
     emit();
     setRealtimeActive(false);
   });
   c.on("error", e => {
+    if (client !== c) return;
     state.error = e?.message || String(e);
     emit();
     attempts++;
