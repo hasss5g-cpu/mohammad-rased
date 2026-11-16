@@ -20,7 +20,8 @@ export const state = {
   expiresAt: 0,
   lastChecked: 0,
   provider: "brewpage",
-  shared: false
+  shared: false,
+  realtime: false
 };
 
 let settings = null;
@@ -30,6 +31,7 @@ let pushTimer = null;
 let heartbeatTimer = null;
 let pullTimer = null;
 let renewTimer = null;
+let realtimeActive = false;
 
 function emit() {
   try { document.dispatchEvent(new CustomEvent("rased:sync", { detail: { ...state } })); } catch (e) { }
@@ -165,7 +167,7 @@ export async function connectCloud(code, { verify = true, shared = false, syncSe
     await resetPending();
     setState({ pending: 0 });
     schedulePull();
-    pushNow(true).catch(() => { });
+    pushNow(!isShared).catch(() => { });
     return cfg;
   } catch (e) {
     applyingRemote = false;
@@ -189,6 +191,7 @@ export function hash(s) {
 }
 
 export async function pushNow(force = false) {
+  if (realtimeActive && !force) return false;
   if (!settings?.cloud?.enabled || !settings.cloud.id) return false;
   if (state.syncing) return false;
   if (!navigator.onLine) { setState({ online: false, error: "" }); return false; }
@@ -228,6 +231,7 @@ export async function pushNow(force = false) {
 }
 
 export async function pullNow() {
+  if (realtimeActive) return false;
   if (!settings?.cloud?.enabled || !settings.cloud.id) return false;
   if (state.syncing) return false;
   if (!navigator.onLine) { setState({ online: false }); return false; }
@@ -276,6 +280,7 @@ async function checkNetwork() {
 
 function schedulePull() {
   clearInterval(pullTimer);
+  if (realtimeActive) return;
   pullTimer = setInterval(() => {
     if (document.visibilityState === "visible" && navigator.onLine) pullNow().catch(() => { });
   }, state.shared ? 2000 : 60000);
@@ -286,9 +291,22 @@ function stopTimers() {
 }
 
 const schedulePush = debounce(() => {
-  if (applyingRemote) return;
+  if (applyingRemote || realtimeActive) return;
   pushNow().catch(() => { });
 }, 500);
+
+export function setRealtimeActive(active) {
+  realtimeActive = !!active;
+  setState({ realtime: realtimeActive });
+  if (realtimeActive) {
+    clearInterval(pullTimer);
+    clearTimeout(pushTimer);
+    clearInterval(renewTimer);
+  } else if (state.configured) {
+    schedulePull();
+    if (navigator.onLine) schedulePush();
+  }
+}
 
 export async function initSync() {
   settings = await getSettings();
@@ -311,7 +329,7 @@ export async function initSync() {
   if (state.shared) {
     clearInterval(renewTimer);
     renewTimer = setInterval(() => {
-      if (document.visibilityState === "visible" && navigator.onLine) pushNow(true).catch(() => { });
+      if (!realtimeActive && document.visibilityState === "visible" && navigator.onLine) pushNow(true).catch(() => { });
     }, 12 * 60 * 60 * 1000);
   }
 
@@ -319,7 +337,7 @@ export async function initSync() {
     setState({ online: true });
     const ok = await checkNetwork();
     if (!ok) return;
-    if (state.configured) await pushNow(true);
+    if (state.configured && !realtimeActive) await pushNow(true);
     else if (SHARED_SYNC_CODE) {
       try { await connectCloud(SHARED_SYNC_CODE, { verify: true, shared: true, syncSettings: false }); } catch (e) { console.warn("shared cloud retry", e); }
     }
@@ -345,7 +363,7 @@ export async function initSync() {
       if (state.configured) pullNow().catch(() => { });
     }
   });
-  window.addEventListener("beforeunload", () => { if (state.configured && state.pending > 0) pushNow(true); });
+  window.addEventListener("beforeunload", () => { if (!realtimeActive && state.configured && state.pending > 0) pushNow(true); });
   return state;
 }
 
@@ -354,3 +372,4 @@ export async function copyCode() {
   if (!settings?.cloud?.id) return "";
   return encodeCode(settings.cloud);
 }
+

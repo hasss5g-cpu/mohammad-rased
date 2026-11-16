@@ -921,3 +921,24 @@ select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csv
 .public-case-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
 .public-case-actions .btn { flex: 1; }
 @media (max-width: 760px) { .public-cases-grid { grid-template-columns: 1fr; } }
+
+/* ---------------- ثبات أبعاد الهاتف ---------------- */
+@media (max-width: 600px) {
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { min-height: 100dvh; overscroll-behavior-y: none; }
+  .app { min-height: 100dvh; }
+  :root { --header-h: 76px; }
+  .header-inner { height: var(--header-h); min-height: var(--header-h); padding-block: 8px; }
+  .home-stats { grid-auto-rows: 108px; }
+  .home-stats .stat-card { height: 108px; min-height: 108px; }
+  .students-grid { grid-auto-rows: 76px; }
+  .student-card { height: 76px; min-height: 76px; max-height: 76px; }
+  .student-card .s-name { line-height: 1.18; max-height: 2.36em; overflow: hidden; }
+  .student-card .s-meta { line-height: 1.15; }
+  .class-head { min-height: 54px; }
+  .att-summary-bar { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .att-summary-inner { min-height: 68px; }
+  .modal { height: min(88dvh, 640px); max-height: 88dvh; }
+  .modal-body { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .admin-content { padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px)); }
+}

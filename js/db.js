@@ -46,6 +46,43 @@ let cache = { students: null, settings: null, holidays: null, sessionsByDate: ne
 let channel = null;
 export const events = new EventTarget();
 
+/* ---------------- بصمة التعديل المستقلة عن ساعة الجهاز ---------------- */
+const DEVICE_KEY = "rased_device_id";
+const LAMPORT_KEY = "rased_lamport";
+function getDeviceId() {
+  try {
+    let id = localStorage.getItem(DEVICE_KEY);
+    if (!id) {
+      id = (crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
+      localStorage.setItem(DEVICE_KEY, id);
+    }
+    return id;
+  } catch (e) { return "device"; }
+}
+const DEVICE_ID = getDeviceId();
+let lamport = Number((() => { try { return localStorage.getItem(LAMPORT_KEY) || 0; } catch (e) { return 0; } })()) || 0;
+function saveLamport() { try { localStorage.setItem(LAMPORT_KEY, String(lamport)); } catch (e) { } }
+function parseRev(rev) {
+  const m = /^(\d+)-(.+)$/.exec(String(rev || ""));
+  return m ? { n: Number(m[1]), d: m[2] } : null;
+}
+export function noteRev(rev) {
+  const r = parseRev(rev);
+  if (r && r.n > lamport) { lamport = r.n; saveLamport(); }
+}
+function nextRev() { lamport++; saveLamport(); return `${lamport}-${DEVICE_ID}`; }
+function compareRevs(a, b) {
+  const A = parseRev(a), B = parseRev(b);
+  if (A && B) return A.n - B.n || (A.d > B.d ? 1 : A.d < B.d ? -1 : 0);
+  if (A) return 1;
+  if (B) return -1;
+  return 0;
+}
+function withRev(value, keepRev = false) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  return keepRev ? value : { ...value, rev: nextRev() };
+}
+
 function broadcast(type, detail = {}) {
   try {
     if (!channel && "BroadcastChannel" in window) channel = new BroadcastChannel("rased-db");
@@ -123,7 +160,10 @@ function reqPromise(req) {
 }
 function all(store) { return reqPromise(tx(store).getAll()); }
 function get(store, key) { return reqPromise(tx(store).get(key)); }
-function put(store, value) { return reqPromise(tx(store, "readwrite").put(value)); }
+function put(store, value, { keepRev = false } = {}) {
+  if (store !== "meta") value = withRev(value, keepRev);
+  return reqPromise(tx(store, "readwrite").put(value));
+}
 function del(store, key) { return reqPromise(tx(store, "readwrite").delete(key)); }
 function clearStore(store) { return reqPromise(tx(store, "readwrite").clear()); }
 function count(store) { return reqPromise(tx(store).count()); }
@@ -670,12 +710,12 @@ export async function listLogs(limit = 100) {
 }
 
 /* ---------------- أدوات مساعدة للتخزين ---------------- */
-export function bulkPut(store, rows) {
+export function bulkPut(store, rows, { keepRev = false } = {}) {
   return new Promise((resolve, reject) => {
     if (!rows.length) return resolve();
     const t = db.transaction(store, "readwrite");
     const os = t.objectStore(store);
-    for (const row of rows) os.put(row);
+    for (const row of rows) os.put(store === "meta" ? row : withRev(row, keepRev));
     t.oncomplete = () => resolve();
     t.onerror = () => reject(t.error);
     t.onabort = () => reject(t.error);
@@ -962,10 +1002,13 @@ export async function mergeRemote(remote, { syncSettings = true } = {}) {
     const toPut = [];
     for (const r of rows) {
       const key = r.id || r.date || r.studentId;
+      noteRev(r.rev);
       const cur = map.get(key);
-      if (!cur || (r.updatedAt || 0) > (cur.updatedAt || 0)) { toPut.push(r); changed++; }
+      const cmp = compareRevs(r.rev, cur?.rev);
+      const newer = !cur || (cmp !== 0 ? cmp > 0 : (r.updatedAt || 0) > (cur.updatedAt || 0));
+      if (newer) { toPut.push(r); changed++; }
     }
-    if (toPut.length) await bulkPut(store, toPut);
+    if (toPut.length) await bulkPut(store, toPut, { keepRev: true });
   };
   await mergeStore("students", remote.students);
   await mergeStore("attendance", remote.attendance);

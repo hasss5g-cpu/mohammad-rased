@@ -1,5 +1,5 @@
 /* راصد — Service Worker (عمل كامل دون إنترنت) */
-const VERSION = "rased-v2.6.1";
+const VERSION = "rased-v3.0.0";
 const ASSETS = [
   "./",
   "./index.html",
@@ -7,6 +7,8 @@ const ASSETS = [
   "./css/styles.css",
   "./js/app.js",
   "./js/recorder-auth.js",
+  "./js/realtime.js",
+  "./vendor/mqtt.min.js",
   "./js/core.js",
   "./js/db.js",
   "./js/shared-cloud.js",

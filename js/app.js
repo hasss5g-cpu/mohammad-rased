@@ -11,6 +11,7 @@ import { renderExcuseForm } from "./excuse.js";
 import { renderSummary, renderAbsentees } from "./public-reports.js";
 import { renderPublicCases } from "./public-cases.js";
 import { requireRecorder } from "./recorder-auth.js";
+import { initRealtime } from "./realtime.js";
 
 const app = $("#app");
 
@@ -240,6 +241,7 @@ async function boot() {
   initSync().then(st => {
     window.__rasedSync = st;
     applySyncChip(st);
+    initRealtime();
     if (st?.configured) setTimeout(() => window.dispatchEvent(new CustomEvent("rased:remote", { detail: { changed: 1 } })), 250);
   }).catch(e => console.warn(e));
   setTimeout(() => autoBackupIfDue().catch(e => console.warn("backup", e)), 12000);
