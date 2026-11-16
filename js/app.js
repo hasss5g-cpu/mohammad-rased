@@ -2,7 +2,7 @@
    راصد — نقطة الدخول والتوجيه
    ============================================================ */
 import { $, fmt, todayISO, formatHijri, weekdayName, icon } from "./core.js";
-import { initDB, getSettings, hasDemoData, applyExcusedRoster, autoBackupIfDue } from "./db.js";
+import { initDB, getSettings, hasDemoData, applyExcusedRoster, autoBackupIfDue, events as dbEvents } from "./db.js";
 import { initSync, getState, syncNow, state as syncState } from "./sync.js";
 import { applySyncChip, toast, modal, headerHTML } from "./ui.js";
 import { renderHome, renderStagePicker, renderAttendance } from "./attendance.js";
@@ -237,6 +237,12 @@ async function boot() {
   window.addEventListener("rased:remote", e => {
     if (!e.detail?.changed) return;
     scheduleRemoteRefresh();
+  });
+  // الصفحات للقراءة فقط تتحدث أيضاً عند أي تغيير محلي مباشر.
+  dbEvents.addEventListener("changed", e => {
+    if (e.detail?.store === "settings") return;
+    const path = parseHash();
+    if (/^\/(?:$|summary|absentees|recurring)/.test(path)) scheduleRemoteRefresh();
   });
   initSync().then(st => {
     window.__rasedSync = st;
