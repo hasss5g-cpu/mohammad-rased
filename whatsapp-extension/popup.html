@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>راصد — مُرسل واتساب</title>
+<style>
+  body { font-family: "Tajawal", "Segoe UI", Tahoma, Arial; width: 340px; margin: 0; padding: 14px; background: #f7f6f0; color: #13221c; }
+  h1 { font-size: 16px; margin: 0 0 4px; color: #0b513d; }
+  p { font-size: 12.5px; color: #5d6c64; margin: 0 0 10px; line-height: 1.7; }
+  .box { background: #fff; border: 1px solid #e2e6df; border-radius: 12px; padding: 11px; margin-bottom: 10px; }
+  .row { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; }
+  .row b { color: #0f6b4f; }
+  button { font-family: inherit; border: 1px solid #e2e6df; background: #fff; border-radius: 9px; padding: 8px 12px; cursor: pointer; font-weight: 700; font-size: 13px; }
+  button.primary { background: #0f6b4f; border-color: #0f6b4f; color: #fff; }
+  button.danger { color: #b3261e; border-color: #f3b7b1; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; background: #e2e8f0; color: #475569; }
+  .pill.on { background: #dcfce7; color: #15803d; }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  ol { margin: 6px 0 0; padding-inline-start: 18px; font-size: 12.5px; color: #334155; line-height: 1.9; }
+</style>
+</head>
+<body>
+  <h1>راصد — مُرسل واتساب</h1>
+  <p>إضافة تُرسل رسائل أولياء الأمور تلقائياً من موقع راصد لرصد الغياب.</p>
+
+  <div class="box">
+    <div class="row"><span>الحالة</span><span id="state" class="pill">غير مُشغّل</span></div>
+    <div class="row"><span>تم الإرسال</span><b id="sent">0</b></div>
+    <div class="row"><span>فشل</span><b id="failed">0</b></div>
+    <div class="row"><span>التقدّم</span><b id="prog">0 / 0</b></div>
+  </div>
+
+  <div class="btns">
+    <button class="primary" id="open">فتح واتساب ويب</button>
+    <button class="danger" id="stop">إيقاف الإرسال</button>
+  </div>
+
+  <div class="box" style="margin-top:10px">
+    <b style="font-size:13px">طريقة التشغيل</b>
+    <ol>
+      <li>سجّل الدخول إلى واتساب ويب مرة واحدة.</li>
+      <li>افتح موقع راصد ← الإدارة ← واتساب.</li>
+      <li>اختر الطلاب واضغط «إرسال تلقائي عبر الإضافة».</li>
+    </ol>
+  </div>
+
+  <p style="font-size:11px;margin-top:8px">تنبيه: الإرسال الآلي الجماعي قد يخالف شروط واتساب. استخدم فواصل مريحة.</p>
+  <script src="popup.js"></script>
+</body>
+</html>

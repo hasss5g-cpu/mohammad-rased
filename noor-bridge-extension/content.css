@@ -1,0 +1,43 @@
+:root { --rased-green: #0f6b4f; --rased-gold: #b98f1d; }
+#rased-noor-fab {
+  position: fixed; bottom: 22px; left: 22px; z-index: 2147483646;
+  display: inline-flex; align-items: center; gap: 8px;
+  background: #0b513d; color: #fff; border: 0; border-radius: 999px;
+  padding: 12px 18px; font-family: "Tajawal", "Segoe UI", Tahoma, Arial, sans-serif;
+  font-size: 15px; font-weight: 800; box-shadow: 0 8px 30px rgba(0,0,0,.28); cursor: pointer;
+}
+#rased-noor-fab:hover { background: #0f6b4f; }
+#rased-noor-panel {
+  position: fixed; bottom: 82px; left: 22px; z-index: 2147483647;
+  width: min(430px, calc(100vw - 30px)); max-height: min(78vh, 720px);
+  background: #fff; color: #13221c; border: 1px solid #cfd8d0; border-radius: 18px;
+  box-shadow: 0 24px 70px rgba(0,0,0,.3); display: none; flex-direction: column;
+  font-family: "Tajawal", "Segoe UI", Tahoma, Arial, sans-serif; direction: rtl;
+  overflow: hidden;
+}
+#rased-noor-panel.open { display: flex; }
+.rased-noor-head { display: flex; align-items: center; gap: 8px; padding: 13px 15px; background: #0b513d; color: #fff; }
+.rased-noor-head b { font-size: 16px; }
+.rased-noor-head span { font-size: 11px; opacity: .85; margin-top: 2px; }
+.rased-noor-head button { margin-inline-start: auto; background: transparent; color: #fff; border: 0; font-size: 22px; cursor: pointer; }
+.rased-noor-body { padding: 13px 15px; overflow: auto; }
+.rased-noor-body p { margin: 0 0 8px; font-size: 12px; line-height: 1.7; color: #5d6c64; }
+#rased-noor-input {
+  width: 100%; min-height: 110px; resize: vertical; border: 1px solid #cfd8d0; border-radius: 10px;
+  padding: 8px 10px; font-family: ui-monospace, monospace; font-size: 11px; direction: ltr; text-align: left;
+}
+.rased-noor-btns { display: flex; flex-wrap: wrap; gap: 6px; margin: 9px 0; }
+.rased-noor-btns button {
+  border: 1px solid #cfd8d0; background: #fff; color: #13221c; border-radius: 9px;
+  padding: 8px 11px; font-family: inherit; font-weight: 800; font-size: 12px; cursor: pointer;
+}
+.rased-noor-btns button.primary { background: #0f6b4f; border-color: #0f6b4f; color: #fff; }
+.rased-noor-btns button.gold { background: #fff3c4; border-color: #e5c45a; color: #6b5200; }
+.rased-noor-btns button:disabled { opacity: .45; cursor: not-allowed; }
+#rased-noor-status { font-size: 12px; line-height: 1.8; color: #334155; background: #f6f8f3; border: 1px solid #e2e6df; border-radius: 10px; padding: 8px 10px; white-space: pre-wrap; }
+#rased-noor-results { margin-top: 8px; max-height: 220px; overflow: auto; border-top: 1px dashed #e2e6df; padding-top: 7px; }
+.rased-noor-item { display: flex; gap: 6px; align-items: flex-start; font-size: 11.5px; padding: 4px 0; border-bottom: 1px solid #f0f2ee; }
+.rased-noor-item .ok { color: #0f6b4f; font-weight: 800; }
+.rased-noor-item .no { color: #b3261e; font-weight: 800; }
+.rased-noor-item .nm { flex: 1; }
+.rased-noor-foot { padding: 8px 15px 12px; font-size: 10.5px; color: #6b7a72; border-top: 1px solid #e2e6df; }

@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "راصد — جسر نور",
+  "version": "1.1.0",
+  "description": "يربط بيانات الغياب من راصد بصفحة إدخال المواظبة في نور: يطابق الطلاب ويملأ الغياب بعد معاينة، دون حفظ تلقائي.",
+  "permissions": ["tabs", "storage", "activeTab", "scripting", "clipboardRead", "clipboardWrite"],
+  "host_permissions": ["https://noor.moe.gov.sa/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "راصد — جسر نور"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://noor.moe.gov.sa/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ]
+}

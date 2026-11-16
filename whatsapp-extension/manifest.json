@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "راصد — مُرسل واتساب",
+  "version": "1.0.0",
+  "description": "يرسل رسائل غياب الطلاب والتأخر لأولياء الأمور تلقائياً من موقع راصد: يفتح المحادثة، يرسل، وينتقل للطالب التالي بفواصل آمنة.",
+  "permissions": ["tabs", "storage", "scripting", "clipboardRead", "clipboardWrite"],
+  "host_permissions": ["https://web.whatsapp.com/*"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "راصد — مُرسل واتساب"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["wa-content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    },
+    {
+      "matches": ["https://rased-attendance.surge.sh/*", "https://latest--rased-attendance.surge.sh/*", "http://localhost/*", "http://127.0.0.1/*", "file:///*"],
+      "exclude_matches": ["https://web.whatsapp.com/*"],
+      "js": ["bridge-content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ]
+}
