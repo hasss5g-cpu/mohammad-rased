@@ -1097,3 +1097,96 @@ select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csv
 
 .students-grid.round-cards { grid-auto-rows: auto; }
 
+
+/* ---------------- دوائر 112px بخط أوضح واسم من سطرين ---------------- */
+.students-grid.round-cards {
+  grid-template-columns: repeat(auto-fill, minmax(112px, 124px));
+  justify-content: center;
+  align-items: start;
+  grid-auto-rows: auto;
+  gap: 16px;
+}
+.student-card.round-card {
+  width: 100%;
+  max-width: 124px;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 50%;
+  padding: 0;
+  isolation: isolate;
+}
+.round-name { display: none !important; }
+.student-card.round-card .s-index { display: none; }
+.student-card.round-card .s-name {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 100%;
+  font-family: "Segoe UI", "Noto Sans Arabic", Tahoma, Arial, sans-serif;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -.15px;
+  color: #0b513d;
+}
+.student-card.round-card .s-name .n1,
+.student-card.round-card .s-name .n2 {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.student-card.round-card .s-name .n1 { font-weight: 700; }
+.student-card.round-card .s-name .n2 { font-weight: 800; color: #073b2d; }
+.student-card.round-card .s-body {
+  position: absolute;
+  inset: 25% 7px 19px;
+  width: auto;
+  z-index: 2;
+  justify-content: center;
+  gap: 2px;
+}
+.student-card.round-card .s-meta {
+  font-family: "Segoe UI", "Noto Sans Arabic", Tahoma, Arial, sans-serif;
+  font-size: .5rem;
+  line-height: 1.15;
+  max-height: 2.3em;
+  -webkit-line-clamp: 2;
+}
+.student-card.round-card .s-id {
+  position: absolute;
+  bottom: 5px;
+  inset-inline: 0;
+  z-index: 2;
+  text-align: center;
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+  font-size: .46rem;
+  letter-spacing: .3px;
+  opacity: .62;
+}
+.student-card.round-card .s-state {
+  top: 4px;
+  inset-inline-end: 5px;
+  width: 21px;
+  height: 21px;
+  z-index: 3;
+}
+@media (max-width: 600px) {
+  .students-grid.round-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-items: center;
+    column-gap: 12px;
+    row-gap: 15px;
+    padding: 10px 8px 16px;
+  }
+  .student-card.round-card {
+    width: min(112px, 100%);
+    max-width: 112px;
+  }
+  .student-card.round-card .s-body { inset: 24% 6px 18px; }
+  .student-card.round-card .s-meta { font-size: .48rem; }
+  .student-card.round-card .s-id { bottom: 4px; font-size: .44rem; }
+}
