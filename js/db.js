@@ -28,6 +28,7 @@ export const DEFAULT_SETTINGS = {
   recorderUsername: "1",
   recorderPasswordHash: "ctm3g91o5ud47",
   allowHolidayRecording: false,
+  roundStudentCards: true,
   schoolWhatsApp: "",
   excuseSecret: "rased-1448-mohammed-alrashid",
   excuseMessage: "السلام عليكم ورحمة الله وبركاته،\nنود إفادتكم بأن ابنكم {name} تغيب عن المدرسة يوم {weekday} الموافق {hijri}هـ ({gregorian}).\nنأمل منكم تقديم عذر الغياب عبر الرابط التالي:\n{link}\nولكم منا جزيل الشكر والتقدير.\nمدرسة {school}",

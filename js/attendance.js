@@ -267,6 +267,7 @@ export function renderAttendance(root, mode, stageId) {
   const stage = Number(stageId);
   return new Promise(async resolve => {
     const settings = await getSettings();
+    const roundCards = settings.roundStudentCards !== false;
     const today = todayISO();
     const hol = await holidayInfo(today);
     const term = activeTermRange(settings);
@@ -415,7 +416,7 @@ export function renderAttendance(root, mode, stageId) {
       const ic = st === "absent" ? (exc ? "file" : "x") : st === "late" ? "clock" : "check";
       const lateTime = st === "late" ? (state.lateTimes.get(s.id) || "") : "";
       const label = st === "absent" ? (exc ? "غائب بعذر" : "غائب بدون عذر") : st === "late" ? (lateTime ? `متأخر ${lateTime}` : "متأخر") : "حاضر";
-      return `<button type="button" class="student-card ${cls}" data-student="${s.id}" aria-pressed="${st !== "present"}" aria-label="${escapeHtml(s.name)} — ${label}" title="نقرة: ${st === "present" ? (state.mode === "late" ? "متأخر" : "غياب بدون عذر") : "حاضر"}${state.mode === "absence" ? " · نقرتان: غياب بعذر" : ""}">
+      return `<button type="button" class="student-card ${roundCards ? "round-card" : ""} ${cls}" data-student="${s.id}" aria-pressed="${st !== "present"}" aria-label="${escapeHtml(s.name)} — ${label}" title="نقرة: ${st === "present" ? (state.mode === "late" ? "متأخر" : "غياب بدون عذر") : "حاضر"}${state.mode === "absence" ? " · نقرتان: غياب بعذر" : ""}">
         <span class="s-index">${escapeHtml(s.studentId.slice(-4))}</span>
         <span class="s-state">${icon(ic, 22)}</span>
         <span class="s-body"><span class="s-name">${escapeHtml(s.name)}</span><span class="s-meta">${escapeHtml(classLabel(s.classNo, s.stageId))} · ${label}</span></span>
@@ -448,7 +449,7 @@ export function renderAttendance(root, mode, stageId) {
               <button type="button" class="btn sm ghost" data-class-bulk="present" data-class-no="${c}">الكل حاضر</button>
             </div>
           </div>
-          <div class="students-grid">${arr.map(cardHTML).join("")}</div>
+          <div class="students-grid ${roundCards ? "round-cards" : ""}">${arr.map(cardHTML).join("")}</div>
         </section>`;
       }).join("");
       updateSummary();

@@ -44,6 +44,16 @@ export async function renderSettings(root) {
       </section>
 
       <section class="section-card span-2">
+        <div class="section-head"><div class="section-title">${icon("users", 24)}<div><h2>شكل شاشة الرصد</h2><p>طريقة عرض أسماء الطلاب أثناء إدخال الغياب.</p></div></div></div>
+        <div class="section-body">
+          <div class="switch-row">
+            <div class="txt"><b>أزرار دائرية للطلاب</b><span>أسماء الطلاب وبياناتهم داخل دوائر، ويظهر طالبان متجاوران في السطر على الجوال لتوفير المساحة.</span></div>
+            <label class="switch"><input type="checkbox" id="roundStudentCards" ${settings.roundStudentCards !== false ? "checked" : ""}><i></i></label>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card span-2">
         <div class="section-head"><div class="section-title">${icon("school", 24)}<div><h2>بيانات المدرسة</h2><p>تظهر في رأس الصفحات والمستندات الرسمية.</p></div></div></div>
         <div class="section-body">
           <form id="schoolForm" class="form-grid">
@@ -196,7 +206,7 @@ export async function renderSettings(root) {
       <section class="section-card span-2">
         <div class="section-head"><div class="section-title">${icon("info", 24)}<div><h2>عن النظام</h2></div></div></div>
         <div class="section-body">
-          <p class="legal">راصد — نظام رصد الغياب والتأخر اليومي. يعمل دون إنترنت، ويحفظ فوراً في المتصفح. الإصدار 3.2.0 — العام الدراسي ${escapeHtml(settings.academicYear || "1448")}هـ.</p>
+          <p class="legal">راصد — نظام رصد الغياب والتأخر اليومي. يعمل دون إنترنت، ويحفظ فوراً في المتصفح. الإصدار 3.3.0 — العام الدراسي ${escapeHtml(settings.academicYear || "1448")}هـ.</p>
           <p class="legal">مبني وفق إجراءات وزارة التعليم للتعامل مع الطلبة المتغيبين (المادتان 33 و34) ودليل قواعد السلوك والمواظبة.</p>
           <div class="btn-row" style="margin-top:12px"><a class="btn ghost" href="./guide.html" target="_blank" rel="noopener">${icon("book", 20)} دليل الاستخدام الكامل</a><a class="btn ghost" href="./whatsapp-extension.zip" download>${icon("download", 20)} تحميل إضافة واتساب</a></div>
         </div>
@@ -204,6 +214,7 @@ export async function renderSettings(root) {
     </div>`;
 
   bindSchool(settings);
+  bindDisplay(settings);
   bindTerms(settings);
   bindResolvedCases(root);
   bindPin(settings);
@@ -342,6 +353,15 @@ function bindAutoBackups(root) {
       toast("تم حذف النسخة.");
       renderSettings(root);
     }));
+  });
+}
+
+function bindDisplay(settings) {
+  $("#roundStudentCards")?.addEventListener("change", async e => {
+    await saveSettings({ roundStudentCards: e.target.checked });
+    toast(e.target.checked
+      ? "تم تفعيل الأزرار الدائرية: سيظهر طالبان في السطر على الجوال."
+      : "تم إيقاف الأزرار الدائرية: سيظهر طالب واحد في السطر على الجوال.");
   });
 }
 
