@@ -1,5 +1,5 @@
 /* راصد — Service Worker (عمل كامل دون إنترنت) */
-const VERSION = "rased-v3.3.1";
+const VERSION = "rased-v3.4.0";
 const ASSETS = [
   "./",
   "./index.html",
