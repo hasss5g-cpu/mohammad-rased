@@ -95,7 +95,7 @@ async function publishState() {
 }
 function schedulePublish() {
   clearTimeout(publishTimer);
-  publishTimer = setTimeout(publishState, 350);
+  publishTimer = setTimeout(publishState, 150);
 }
 function requestState() {
   if (!client || !client.connected) return;
@@ -206,7 +206,6 @@ export function initRealtime() {
   if (!("WebSocket" in window)) return;
   dbEvents.addEventListener("changed", e => {
     if (applying) return;
-    if (e.detail?.store === "settings") return;
     schedulePublish();
   });
   document.addEventListener("visibilitychange", () => {
@@ -218,6 +217,7 @@ export function initRealtime() {
     if (!client) { started = false; connect(); }
     else if (!client.connected) { try { client.reconnect(); } catch (e) { } }
   });
+  window.addEventListener("pagehide", () => { publishState(); });
   setInterval(() => {
     if (!started || !client || client.connected) return;
     try { client.reconnect(); } catch (e) { }

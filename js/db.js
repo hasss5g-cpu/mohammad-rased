@@ -1021,7 +1021,12 @@ export async function mergeRemote(remote, { syncSettings = true } = {}) {
   if (syncSettings && remote.settings) {
     const local = await getSettings();
     if ((remote.settings.updatedAt || 0) > (local.updatedAt || 0)) {
-      const merged = deepMerge(structuredClone(local), { ...remote.settings, cloud: local.cloud });
+      const remoteSettings = { ...remote.settings };
+      // بيانات الدخول تبقى محلية لكل جهاز ولا تُستبدل من جهاز آخر.
+      for (const k of ["adminPinHash", "adminUsername", "adminPasswordHash", "recorderUsername", "recorderPasswordHash"]) {
+        if (local[k] !== undefined) remoteSettings[k] = local[k];
+      }
+      const merged = deepMerge(structuredClone(local), { ...remoteSettings, cloud: local.cloud });
       await put("meta", { key: "settings", value: merged });
       cache.settings = merged;
       changed++;
