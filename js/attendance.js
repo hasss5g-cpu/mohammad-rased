@@ -417,13 +417,17 @@ export function renderAttendance(root, mode, stageId) {
       const lateTime = st === "late" ? (state.lateTimes.get(s.id) || "") : "";
       const label = st === "absent" ? (exc ? "غائب بعذر" : "غائب بدون عذر") : st === "late" ? (lateTime ? `متأخر ${lateTime}` : "متأخر") : "حاضر";
       const parts = String(s.name || "").trim().split(/\s+/).filter(Boolean);
-      const line1 = parts.slice(0, 2).join(" ");
-      let line2 = parts.length > 2 ? parts[parts.length - 1] : "";
+      const line1 = parts[0] || "";
+      const second = parts[1] || "";
+      let family = parts.length > 2 ? parts[parts.length - 1] : "";
       if (parts.length > 2 && ["عبد", "حسب", "أبو", "ابو"].includes(parts[parts.length - 2])) {
-        line2 = `${parts[parts.length - 2]} ${line2}`;
+        family = `${parts[parts.length - 2]} ${family}`;
       }
-      const fs1 = line1.length > 17 ? 11.5 : line1.length > 13 ? 12.5 : 13.5;
-      const fs2 = line2.length > 13 ? 11.5 : 12.5;
+      const line2 = parts.length > 2
+        ? [second, family === second ? "" : family].filter(Boolean).join(" ")
+        : second;
+      const fs1 = line1.length > 12 ? 13 : 14.5;
+      const fs2 = line2.length > 18 ? 10.5 : line2.length > 14 ? 11.5 : 13;
       const nameHTML = roundCards
         ? `<span class="s-name round-name-text"><span class="n1" style="font-size:${fs1}px">${escapeHtml(line1)}</span>${line2 ? `<span class="n2" style="font-size:${fs2}px">${escapeHtml(line2)}</span>` : ""}</span>`
         : `<span class="s-name">${escapeHtml(s.name)}</span>`;
