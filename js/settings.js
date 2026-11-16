@@ -32,10 +32,10 @@ export async function renderSettings(root) {
 
     <div class="settings-grid">
       <section class="section-card span-2">
-        <div class="section-head"><div class="section-title">${icon("heart", 24)}<div><h2>طلاب ذوي الأعذار</h2><p>إدارة الطلاب الذين يُرصد غيابهم بعذر تلقائياً.</p></div></div></div>
+        <div class="section-head"><div class="section-title">${icon("heart", 24)}<div><h2>طلاب ذوي الأعذار</h2><p>الطلاب الذين يُحوَّل غيابهم إلى «بعذر» تلقائياً عند تسجيله.</p></div></div></div>
         <div class="section-body">
           <div class="callout ${excusedCount ? "ok" : "info"}" style="margin:0">
-            ${excusedCount ? `يوجد <b>${fmt(excusedCount)}</b> طالباً مسجلاً في قائمة ذوي الأعذار.` : "لا يوجد طلاب مسجلون حالياً. أضف الطالب ليُسجَّل غيابه بعذر تلقائياً."}
+            ${excusedCount ? `يوجد <b>${fmt(excusedCount)}</b> طالباً مسجلاً في قائمة ذوي الأعذار. لا يُسجَّل لهم غياب تلقائياً؛ فقط يُحوَّل الغياب المسجل إلى بعذر.` : "لا يوجد طلاب مسجلون حالياً. أضف الطالب ليُحوَّل غيابه المسجل إلى «بعذر» تلقائياً."}
           </div>
           <div class="btn-row" style="margin-top:12px">
             <a class="btn primary" href="#/admin/excused-roster">${icon("heart", 20)} فتح طلاب ذوي الأعذار</a>
@@ -196,7 +196,7 @@ export async function renderSettings(root) {
       <section class="section-card span-2">
         <div class="section-head"><div class="section-title">${icon("info", 24)}<div><h2>عن النظام</h2></div></div></div>
         <div class="section-body">
-          <p class="legal">راصد — نظام رصد الغياب والتأخر اليومي. يعمل دون إنترنت، ويحفظ فوراً في المتصفح. الإصدار 3.1.1 — العام الدراسي ${escapeHtml(settings.academicYear || "1448")}هـ.</p>
+          <p class="legal">راصد — نظام رصد الغياب والتأخر اليومي. يعمل دون إنترنت، ويحفظ فوراً في المتصفح. الإصدار 3.2.0 — العام الدراسي ${escapeHtml(settings.academicYear || "1448")}هـ.</p>
           <p class="legal">مبني وفق إجراءات وزارة التعليم للتعامل مع الطلبة المتغيبين (المادتان 33 و34) ودليل قواعد السلوك والمواظبة.</p>
           <div class="btn-row" style="margin-top:12px"><a class="btn ghost" href="./guide.html" target="_blank" rel="noopener">${icon("book", 20)} دليل الاستخدام الكامل</a><a class="btn ghost" href="./whatsapp-extension.zip" download>${icon("download", 20)} تحميل إضافة واتساب</a></div>
         </div>

@@ -310,7 +310,7 @@ async function renderExcusedRoster(root, settings) {
       <div class="admin-head-actions"><a class="btn ghost" href="#/admin/records">${icon("clipboard", 20)} سجل الغياب</a></div>
     </div>
     <div class="callout ok" style="margin-bottom:16px">
-      بمجرد إضافة الطالب يُسجَّل <b>غائباً بعذر</b> لليوم تلقائياً، ويستمر رصده بعذر في الأيام التالية ضمن المدة المحددة، ويظهر أصفر في شاشة الرصد.
+      لا يُسجَّل الطالب غائباً تلقائياً. عند تسجيله غائباً في أي يوم ضمن المدة، يُحوَّل تلقائياً إلى <b>غائب بعذر</b>، ويظهر أصفر في شاشة الرصد.
     </div>
     <section class="section-card">
       <div class="section-head"><div class="section-title">${icon("calendar", 22)}<div><h2>مدة العذر الافتراضية للطلاب الجدد</h2><p>تُطبق على الطالب عند إضافته، ويمكن ترك نهاية المدة فارغة لعذر مستمر.</p></div></div></div>
@@ -378,12 +378,12 @@ async function renderExcusedRoster(root, settings) {
   $$("[data-add-excused]").forEach(b => b.addEventListener("click", async () => {
     if (excusedRosterState.to && excusedRosterState.to < excusedRosterState.from) { toast("تاريخ النهاية قبل البداية.", { type: "error" }); return; }
     await addExcusedStudent({ studentId: b.dataset.addExcused, from: excusedRosterState.from, to: excusedRosterState.to, reason: excusedRosterState.reason });
-    toast("تمت إضافة الطالب إلى طلاب ذوي الأعذار، وسيُسجَّل بعذر في أيام الدراسة.");
+    toast("تمت إضافة الطالب إلى طلاب ذوي الأعذار. لن يُسجَّل غياب تلقائياً، وعند رصده غائباً سيُحوَّل إلى غائب بعذر.");
     renderExcusedRoster(root, settings);
   }));
   $$("[data-remove-excused]").forEach(b => b.addEventListener("click", async () => {
     const s = smap.get(b.dataset.removeExcused);
-    const ok = await confirmDialog({ title: "إزالة العذر التلقائي", message: `سيتم إيقاف الرصد التلقائي بعذر للطالب «${s?.name || ""}». إذا كان غياب اليوم قد سُجّل تلقائياً فسيُعاد حاضراً. هل تريد المتابعة؟`, confirmText: "إزالة", iconName: "trash" });
+    const ok = await confirmDialog({ title: "إزالة العذر التلقائي", message: `سيتم إيقاف تحويل غياب الطالب «${s?.name || ""}» إلى «بعذر». إذا كان غياب اليوم محوّلاً تلقائياً فسيبقى غائباً بدون عذر. هل تريد المتابعة؟`, confirmText: "إزالة", iconName: "trash" });
     if (!ok) return;
     await removeExcusedStudent(b.dataset.removeExcused);
     toast("تم إيقاف العذر التلقائي.");

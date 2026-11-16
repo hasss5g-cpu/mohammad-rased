@@ -321,16 +321,19 @@ export async function getStatus(date, studentId, mode) {
 export async function bulkImportAttendance(records, { overwrite = true, by = "noor-import" } = {}) {
   const now = Date.now();
   const ops = [];
+  const rosterCache = new Map();
   let skipped = 0;
   for (const rec of records) {
     const id = attendanceId(rec.date, rec.studentId, "absence");
     const existing = await get("attendance", id);
     if (existing && existing.status === "absent" && existing.excused === !!rec.excused && !overwrite) { skipped++; continue; }
     if (existing && !overwrite) { skipped++; continue; }
+    if (!rosterCache.has(rec.date)) rosterCache.set(rec.date, await excusedSetForDate(rec.date));
+    const autoExcused = rosterCache.get(rec.date).has(rec.studentId);
     ops.push({
       id, date: rec.date, studentId: rec.studentId,
       stageId: Number(rec.stageId), classNo: Number(rec.classNo),
-      mode: "absence", status: "absent", excused: !!rec.excused,
+      mode: "absence", status: "absent", excused: !!rec.excused || autoExcused, autoExcused,
       updatedAt: now, createdAt: existing?.createdAt || now, by, demo: false
     });
   }
@@ -349,15 +352,17 @@ export async function setStatus({ date, studentId, stageId, classNo, mode, statu
   const id = attendanceId(date, studentId, mode);
   const existing = await get("attendance", id);
   const late = mode === "late" && status === "late" ? lateStamp() : null;
+  const autoExcused = status === "absent" ? (await excusedSetForDate(date)).has(studentId) : false;
   if (status === "present") {
     if (existing) {
-      await put("attendance", { ...existing, status: "present", excused: false, lateAt: null, lateTime: "", updatedAt: Date.now(), by, demo: false });
+      await put("attendance", { ...existing, status: "present", excused: false, autoExcused: false, lateAt: null, lateTime: "", updatedAt: Date.now(), by, demo: false });
     }
     // لا ننشئ سجلات للحاضرين افتراضياً (لتقليل حجم البيانات)
   } else {
     await put("attendance", {
       id, date, studentId, stageId: Number(stageId), classNo: Number(classNo), mode,
-      status, excused: status === "absent" ? !!excused : false,
+      status, excused: status === "absent" ? (!!excused || autoExcused) : false,
+      autoExcused,
       lateAt: late?.at || null, lateTime: late?.time || "",
       updatedAt: Date.now(), createdAt: existing?.createdAt || Date.now(), by, demo
     });
@@ -371,7 +376,7 @@ export async function setExcused({ date, studentId, excused }) {
   const id = attendanceId(date, studentId, "absence");
   const rec = await get("attendance", id);
   if (!rec || rec.deleted) return false;
-  await put("attendance", { ...rec, excused: !!excused, updatedAt: Date.now(), demo: false });
+  await put("attendance", { ...rec, excused: !!excused, autoExcused: false, updatedAt: Date.now(), demo: false });
   await markPending(1);
   broadcast("changed", { store: "attendance", date, mode: "absence" });
   return true;
@@ -381,19 +386,21 @@ export async function bulkSetStatus({ date, stageId, classNo, mode, status, by =
   const existing = await getDayMap(date, mode);
   const now = Date.now();
   const late = mode === "late" && status === "late" ? lateStamp() : null;
+  const roster = status === "absent" ? await excusedSetForDate(date) : new Set();
   const ops = [];
   if (status === "present") {
     for (const [sid, rec] of existing) {
       const s = students.find(x => x.id === sid);
       if (!s) continue;
-      if (rec.status !== "present") ops.push({ ...rec, status: "present", excused: false, lateAt: null, lateTime: "", updatedAt: now, by, demo: false });
+      if (rec.status !== "present") ops.push({ ...rec, status: "present", excused: false, autoExcused: false, lateAt: null, lateTime: "", updatedAt: now, by, demo: false });
     }
   } else {
     for (const s of students) {
       const rec = existing.get(s.id);
+      const isExcused = status === "absent" && roster.has(s.id);
       ops.push({
         id: attendanceId(date, s.id, mode), date, studentId: s.id, stageId: Number(s.stageId), classNo: Number(s.classNo),
-        mode, status, excused: false,
+        mode, status, excused: isExcused, autoExcused: isExcused,
         lateAt: late?.at || null, lateTime: late?.time || "",
         updatedAt: now, createdAt: rec?.createdAt || now, by, demo: false
       });
@@ -520,6 +527,10 @@ export async function listExcusedRoster() {
   const rows = await all("excusedRoster");
   return rows.filter(r => r.active !== false).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 }
+async function excusedSetForDate(date) {
+  const roster = await listExcusedRoster();
+  return new Set(roster.filter(r => (!r.from || date >= r.from) && (!r.to || date <= r.to)).map(r => r.studentId));
+}
 export async function addExcusedStudent({ studentId, from, to = "", reason = "عذر مستمر" }) {
   const now = Date.now();
   const existing = await get("excusedRoster", studentId);
@@ -530,7 +541,7 @@ export async function addExcusedStudent({ studentId, from, to = "", reason = "ع
   await put("excusedRoster", row);
   await markPending(1);
   broadcast("changed", { store: "excusedRoster" });
-  await applyExcusedRoster(todayISO(), { studentId, force: true });
+  await applyExcusedRoster(todayISO(), { studentId });
   return row;
 }
 export async function removeExcusedStudent(studentId) {
@@ -538,49 +549,43 @@ export async function removeExcusedStudent(studentId) {
   if (existing) await put("excusedRoster", { ...existing, active: false, updatedAt: Date.now() });
   const today = todayISO();
   const rec = await get("attendance", attendanceId(today, studentId, "absence"));
-  if (rec && rec.auto && rec.status === "absent") {
-    await put("attendance", { ...rec, status: "present", excused: false, auto: false, updatedAt: Date.now() });
+  if (rec && rec.status === "absent" && rec.autoExcused) {
+    await put("attendance", { ...rec, excused: false, autoExcused: false, updatedAt: Date.now() });
+  } else if (rec && rec.auto && rec.status === "absent") {
+    await put("attendance", { ...rec, status: "present", excused: false, auto: false, autoExcused: false, updatedAt: Date.now() });
   }
   await markPending(1);
   broadcast("changed", { store: "excusedRoster" });
   broadcast("changed", { store: "attendance", date: today, mode: "absence" });
 }
-export async function applyExcusedRoster(date, { studentId = null, force = false } = {}) {
-  const settings = await getSettings();
-  const term = activeTermRange(settings);
-  if (date < term.from || date > term.to) return 0;
-  const idx = weekdayIndex(date);
-  if ((settings.weekend || [5, 6]).map(Number).includes(idx)) return 0;
-  const holidays = await all("holidays");
-  if (holidays.some(h => h.date === date)) return 0;
+export async function applyExcusedRoster(date, { studentId = null } = {}) {
+  // لا يُنشئ غياباً تلقائياً. فقط يحوّل أي غياب مسجّل لهذا الطالب إلى «بعذر».
   let roster = await listExcusedRoster();
   if (studentId) roster = roster.filter(r => r.studentId === studentId);
-  const students = await listStudents({ includeInactive: true });
-  const smap = new Map(students.map(s => [s.id, s]));
-  const ops = [];
   const now = Date.now();
+  const ops = [];
+  let removed = 0;
   for (const entry of roster) {
     if (entry.from && date < entry.from) continue;
     if (entry.to && date > entry.to) continue;
-    const s = smap.get(entry.studentId);
-    if (!s || s.active === false) continue;
-    const id = attendanceId(date, s.id, "absence");
+    const id = attendanceId(date, entry.studentId, "absence");
     const existing = await get("attendance", id);
-    // لا نتجاوز تسجيلاً يدوياً للحضور أو التأخر؛ نكمل النقص فقط.
-    if (!force && existing && (existing.status === "present" || existing.status === "late")) continue;
-    if (existing && existing.status === "absent" && existing.excused && !force) continue;
-    ops.push({
-      id, date, studentId: s.id, stageId: Number(s.stageId), classNo: Number(s.classNo), mode: "absence",
-      status: "absent", excused: true, auto: true,
-      updatedAt: now, createdAt: existing?.createdAt || now, by: "auto-excuse", demo: false
-    });
+    if (!existing) continue;
+    // إزالة أي غياب أنشأه النظام سابقاً تلقائياً لطلاب الأعذار.
+    if (existing.auto && existing.status === "absent") { await del("attendance", id); removed++; continue; }
+    if (existing.status !== "absent" || existing.excused) continue;
+    ops.push({ ...existing, excused: true, autoExcused: true, updatedAt: now, by: "auto-excuse" });
   }
   if (ops.length) {
     await bulkPut("attendance", ops);
     await markPending(ops.length);
     broadcast("changed", { store: "attendance", date, mode: "absence" });
   }
-  return ops.length;
+  if (removed) {
+    await markPending(removed);
+    broadcast("changed", { store: "attendance", date, mode: "absence" });
+  }
+  return ops.length + removed;
 }
 
 /* ---------------- الإجازات ---------------- */

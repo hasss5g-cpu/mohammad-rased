@@ -8,7 +8,7 @@ import {
 } from "./core.js";
 import {
   listStudents, getSettings, getDayMap, getSessions, setStatus, bulkSetStatus,
-  hasDemoData, clearDemoData, totalsByStudent, saveSettings, holidayInfo, getDayStats, applyExcusedRoster
+  hasDemoData, clearDemoData, totalsByStudent, saveSettings, holidayInfo, getDayStats, applyExcusedRoster, listExcusedRoster
 } from "./db.js";
 import { headerHTML, statCard, emptyState, applySyncChip, toast, confirmDialog, modal, copyText } from "./ui.js";
 
@@ -291,15 +291,17 @@ export function renderAttendance(root, mode, stageId) {
       bindHeaderDate(); resolve(); return;
     }
     const records = await getDayMap(today, mode);
+    const roster = await listExcusedRoster();
+    const autoExcused = new Set(roster.filter(r => (!r.from || today >= r.from) && (!r.to || today <= r.to)).map(r => r.studentId));
     const sessions = await getSessions(today);    const state = {
       mode, stage, today, students, records,
       filterClass: "all", q: "", onlyMarked: false,
-      absent: new Set(), late: new Set(), excused: new Set(), lateTimes: new Map(),
+      absent: new Set(), late: new Set(), excused: new Set(), lateTimes: new Map(), autoExcused,
       undoStack: []
     };
     for (const s of students) {
       const r = records.get(s.id);
-      if (r?.status === "absent") { state.absent.add(s.id); if (r.excused) state.excused.add(s.id); }
+      if (r?.status === "absent") { state.absent.add(s.id); if (r.excused || autoExcused.has(s.id)) state.excused.add(s.id); }
       if (r?.status === "late") { state.late.add(s.id); if (r.lateTime) state.lateTimes.set(s.id, r.lateTime); }
     }
     const stageInfo = STAGES.find(s => s.id === stage);
@@ -482,6 +484,7 @@ export function renderAttendance(root, mode, stageId) {
     async function applyStudentState(id, status, excused = false) {
       const s = state.students.find(x => x.id === id);
       if (!s) return;
+      if (status === "absent" && state.autoExcused.has(id)) excused = true;
       const lateTime = status === "late" ? nowClock() : "";
       if (status === "present") { state.absent.delete(id); state.late.delete(id); state.excused.delete(id); state.lateTimes.delete(id); }
       else if (status === "late") { state.late.add(id); state.absent.delete(id); state.excused.delete(id); state.lateTimes.set(id, lateTime); }
@@ -585,7 +588,11 @@ export function renderAttendance(root, mode, stageId) {
       } else if (status === "late") {
         for (const s of affected) { state.late.add(s.id); state.absent.delete(s.id); state.excused.delete(s.id); state.lateTimes.set(s.id, bulkLateTime); }
       } else {
-        for (const s of affected) { state.absent.add(s.id); state.excused.delete(s.id); state.lateTimes.delete(s.id); }
+        for (const s of affected) {
+          state.absent.add(s.id);
+          if (state.autoExcused.has(s.id)) state.excused.add(s.id); else state.excused.delete(s.id);
+          state.lateTimes.delete(s.id);
+        }
       }
       renderChips(); renderRoster(); markSaved();
       await bulkSetStatus({ date: state.today, stageId: state.stage, classNo: classNo === "all" ? null : Number(classNo), mode: state.mode, status });
@@ -597,7 +604,7 @@ export function renderAttendance(root, mode, stageId) {
             if (!s) continue;
             if (p.status === "present") { state.absent.delete(p.id); state.late.delete(p.id); state.excused.delete(p.id); state.lateTimes.delete(p.id); }
             else if (p.status === "late") { state.late.add(p.id); state.absent.delete(p.id); state.excused.delete(p.id); if (p.lateTime) state.lateTimes.set(p.id, p.lateTime); }
-            else { state.absent.add(p.id); if (p.excused) state.excused.add(p.id); else state.excused.delete(p.id); state.lateTimes.delete(p.id); }
+            else { state.absent.add(p.id); if (p.excused || state.autoExcused.has(p.id)) state.excused.add(p.id); else state.excused.delete(p.id); state.lateTimes.delete(p.id); }
             await setStatus({ date: state.today, studentId: p.id, stageId: s.stageId, classNo: s.classNo, mode: state.mode, status: p.status, excused: p.excused });
           }
           renderChips(); renderRoster();
