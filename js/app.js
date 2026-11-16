@@ -214,7 +214,11 @@ async function boot() {
       });
     }
   });
-  initSync().then(st => { window.__rasedSync = st; applySyncChip(st); }).catch(e => console.warn(e));
+  initSync().then(st => {
+    window.__rasedSync = st;
+    applySyncChip(st);
+    if (st?.configured) setTimeout(() => window.dispatchEvent(new CustomEvent("rased:remote", { detail: { changed: 1 } })), 250);
+  }).catch(e => console.warn(e));
   setTimeout(() => autoBackupIfDue().catch(e => console.warn("backup", e)), 12000);
   setInterval(() => autoBackupIfDue().catch(e => console.warn("backup", e)), 6 * 60 * 60 * 1000);
   registerSW();

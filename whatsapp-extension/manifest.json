@@ -18,7 +18,7 @@
       "all_frames": false
     },
     {
-      "matches": ["https://rased-attendance.surge.sh/*", "https://latest--rased-attendance.surge.sh/*", "http://localhost/*", "http://127.0.0.1/*", "file:///*"],
+      "matches": ["https://rased-attendance.surge.sh/*", "https://latest--rased-attendance.surge.sh/*", "https://hasss5g-cpu.github.io/mohammad-rased/*", "https://hasss5g-cpu.github.io/*", "http://localhost/*", "http://127.0.0.1/*", "file:///*"],
       "exclude_matches": ["https://web.whatsapp.com/*"],
       "js": ["bridge-content.js"],
       "run_at": "document_idle",
