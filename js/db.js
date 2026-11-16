@@ -3,7 +3,7 @@
    ============================================================ */
 import {
   todayISO, addDays, isoToDate, hijriParts, formatHijri, weekdayIndex,
-  uid, clamp, classLabel, stageName, activeTermRange
+  uid, clamp, classLabel, stageName, activeTermRange, nowClock
 } from "./core.js";
 import { loadSeed, SCHOOL_DEFAULT } from "../data/seed.js";
 import { SHARED_SYNC_CODE } from "./shared-cloud.js";
@@ -342,18 +342,23 @@ export async function bulkImportAttendance(records, { overwrite = true, by = "no
   return { imported: ops.length, skipped, total: records.length };
 }
 
+function lateStamp() {
+  return { at: Date.now(), time: nowClock() };
+}
 export async function setStatus({ date, studentId, stageId, classNo, mode, status, excused = false, by = "recorder", demo = false }) {
   const id = attendanceId(date, studentId, mode);
   const existing = await get("attendance", id);
+  const late = mode === "late" && status === "late" ? lateStamp() : null;
   if (status === "present") {
     if (existing) {
-      await put("attendance", { ...existing, status: "present", excused: false, updatedAt: Date.now(), by, demo: false });
+      await put("attendance", { ...existing, status: "present", excused: false, lateAt: null, lateTime: "", updatedAt: Date.now(), by, demo: false });
     }
     // لا ننشئ سجلات للحاضرين افتراضياً (لتقليل حجم البيانات)
   } else {
     await put("attendance", {
       id, date, studentId, stageId: Number(stageId), classNo: Number(classNo), mode,
       status, excused: status === "absent" ? !!excused : false,
+      lateAt: late?.at || null, lateTime: late?.time || "",
       updatedAt: Date.now(), createdAt: existing?.createdAt || Date.now(), by, demo
     });
   }
@@ -375,12 +380,13 @@ export async function bulkSetStatus({ date, stageId, classNo, mode, status, by =
   const students = await listStudents({ stageId, classNo });
   const existing = await getDayMap(date, mode);
   const now = Date.now();
+  const late = mode === "late" && status === "late" ? lateStamp() : null;
   const ops = [];
   if (status === "present") {
     for (const [sid, rec] of existing) {
       const s = students.find(x => x.id === sid);
       if (!s) continue;
-      if (rec.status !== "present") ops.push({ ...rec, status: "present", excused: false, updatedAt: now, by, demo: false });
+      if (rec.status !== "present") ops.push({ ...rec, status: "present", excused: false, lateAt: null, lateTime: "", updatedAt: now, by, demo: false });
     }
   } else {
     for (const s of students) {
@@ -388,6 +394,7 @@ export async function bulkSetStatus({ date, stageId, classNo, mode, status, by =
       ops.push({
         id: attendanceId(date, s.id, mode), date, studentId: s.id, stageId: Number(s.stageId), classNo: Number(s.classNo),
         mode, status, excused: false,
+        lateAt: late?.at || null, lateTime: late?.time || "",
         updatedAt: now, createdAt: rec?.createdAt || now, by, demo: false
       });
     }

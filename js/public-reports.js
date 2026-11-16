@@ -113,16 +113,14 @@ async function loadModel() {
 }
 
 export async function buildShareLink(kind, date = todayISO()) {
-  const data = await buildData(date);
-  const encoded = await encodeData(data);
-  return `${location.origin}${location.pathname}#/${kind}?s=${encoded}`;
+  return `${location.origin}${location.pathname}#/${kind}?d=${date}`;
 }
 
 function publicHead(data, subtitle, snapshot) {
   return `<header class="public-top">
     <div class="public-brand"><span class="public-mark">${icon("clipboard", 28)}</span><span><b>راصد</b><small>رصد الغياب</small></span></div>
     <div class="public-school"><b>${escapeHtml(data.school)}</b><span>العام الدراسي ${escapeHtml(data.year)}هـ</span></div>
-    <span class="public-badge">${snapshot ? "لقطة محفوظة" : "عرض فقط"}</span>
+    <span class="public-badge">${snapshot ? "لقطة محفوظة" : "عرض مباشر"}</span>
   </header>`;
 }
 function dateLine(data) {
@@ -137,7 +135,7 @@ function printActions(kind, data, snapshot, extra = "") {
     <a class="btn primary lg" href="#/${other}${qs}">${icon(other === "summary" ? "chart" : "users", 22)} ${label}</a>
     <button class="btn ghost lg" type="button" onclick="window.print()">${icon("print", 22)} طباعة</button>
     ${extra}
-    ${snapshot ? `<span class="public-note">${icon("lock", 16)} لقطة ثابتة لا تتغير</span>` : `<span class="public-note">${icon("sync", 16)} يتحدث من بيانات هذا الجهاز</span>`}
+    ${snapshot ? `<span class="public-note">${icon("lock", 16)} لقطة ثابتة لا تتغير</span>` : `<span class="public-note">${icon("sync", 16)} يتحدث لحظياً من جميع الأجهزة</span>`}
   </div>`;
 }
 

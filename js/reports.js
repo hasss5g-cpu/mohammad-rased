@@ -155,7 +155,7 @@ export async function renderReports(root) {
         title, iconName: kind === "summary" ? "chart" : "users", size: "sm",
         body: `<p style="margin:0 0 8px">تم إنشاء الرابط ونسخه. أرسله للمدخل أو افتحه على أي جهاز:</p>
           <textarea class="input" readonly rows="5" style="direction:ltr;text-align:left;font-size:.7rem;width:100%;resize:vertical">${escapeHtml(url)}</textarea>
-          <p class="legal" style="margin:8px 0 0">يحتوي الرابط على لقطة ثابتة لبيانات ${formatHijri(date)}هـ. لا يعرض هذا الرابط أي بيانات إدارة أو إمكانية تعديل.</p>`,
+          <p class="legal" style="margin:8px 0 0">رابط مباشر لبيانات ${formatHijri(date)}هـ. يتحدث تلقائياً عند وصول أي إدخال من أي جهاز، ولا يعرض بيانات الإدارة أو إمكانية تعديل.</p>`,
         actions: [
           { label: "فتح الرابط", kind: "primary", icon: "external", onClick: () => window.open(url, "_blank", "noopener") },
           { label: "إغلاق", kind: "ghost" }

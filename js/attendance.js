@@ -294,13 +294,13 @@ export function renderAttendance(root, mode, stageId) {
     const sessions = await getSessions(today);    const state = {
       mode, stage, today, students, records,
       filterClass: "all", q: "", onlyMarked: false,
-      absent: new Set(), late: new Set(), excused: new Set(),
+      absent: new Set(), late: new Set(), excused: new Set(), lateTimes: new Map(),
       undoStack: []
     };
     for (const s of students) {
       const r = records.get(s.id);
       if (r?.status === "absent") { state.absent.add(s.id); if (r.excused) state.excused.add(s.id); }
-      if (r?.status === "late") state.late.add(s.id);
+      if (r?.status === "late") { state.late.add(s.id); if (r.lateTime) state.lateTimes.set(s.id, r.lateTime); }
     }
     const stageInfo = STAGES.find(s => s.id === stage);
     const classes = Array.from(new Set(students.map(s => s.classNo))).sort((a, b) => a - b);
@@ -411,7 +411,8 @@ export function renderAttendance(root, mode, stageId) {
       const exc = isExcused(s);
       const cls = st === "present" ? "present" : st === "absent" && exc ? "excused" : st;
       const ic = st === "absent" ? (exc ? "file" : "x") : st === "late" ? "clock" : "check";
-      const label = st === "absent" ? (exc ? "غائب بعذر" : "غائب بدون عذر") : st === "late" ? "متأخر" : "حاضر";
+      const lateTime = st === "late" ? (state.lateTimes.get(s.id) || "") : "";
+      const label = st === "absent" ? (exc ? "غائب بعذر" : "غائب بدون عذر") : st === "late" ? (lateTime ? `متأخر ${lateTime}` : "متأخر") : "حاضر";
       return `<button type="button" class="student-card ${cls}" data-student="${s.id}" aria-pressed="${st !== "present"}" aria-label="${escapeHtml(s.name)} — ${label}" title="نقرة: ${st === "present" ? (state.mode === "late" ? "متأخر" : "غياب بدون عذر") : "حاضر"}${state.mode === "absence" ? " · نقرتان: غياب بعذر" : ""}">
         <span class="s-index">${escapeHtml(s.studentId.slice(-4))}</span>
         <span class="s-state">${icon(ic, 22)}</span>
@@ -481,8 +482,9 @@ export function renderAttendance(root, mode, stageId) {
     async function applyStudentState(id, status, excused = false) {
       const s = state.students.find(x => x.id === id);
       if (!s) return;
-      if (status === "present") { state.absent.delete(id); state.late.delete(id); state.excused.delete(id); }
-      else if (status === "late") { state.late.add(id); state.absent.delete(id); state.excused.delete(id); }
+      const lateTime = status === "late" ? nowClock() : "";
+      if (status === "present") { state.absent.delete(id); state.late.delete(id); state.excused.delete(id); state.lateTimes.delete(id); }
+      else if (status === "late") { state.late.add(id); state.absent.delete(id); state.excused.delete(id); state.lateTimes.set(id, lateTime); }
       else { state.absent.add(id); if (excused) state.excused.add(id); else state.excused.delete(id); }
       const card = rosterEl.querySelector(`[data-student="${cssEscape(id)}"]`);
       if (card) {
@@ -492,7 +494,7 @@ export function renderAttendance(root, mode, stageId) {
         card.classList.toggle("excused", isAbsent && excused);
         card.classList.toggle("late", status === "late");
         card.setAttribute("aria-pressed", status !== "present");
-        const label = isAbsent ? (excused ? "غائب بعذر" : "غائب بدون عذر") : status === "late" ? "متأخر" : "حاضر";
+        const label = isAbsent ? (excused ? "غائب بعذر" : "غائب بدون عذر") : status === "late" ? (lateTime ? `متأخر ${lateTime}` : "متأخر") : "حاضر";
         card.setAttribute("aria-label", `${s.name} — ${label}`);
         card.setAttribute("title", `نقرة: ${status === "present" ? (state.mode === "late" ? "متأخر" : "غياب بدون عذر") : "حاضر"}${state.mode === "absence" ? " · نقرتان: غياب بعذر" : ""}`);
         const st = card.querySelector(".s-state");
@@ -519,7 +521,9 @@ export function renderAttendance(root, mode, stageId) {
       if (!s) return;
       const cur = statusOf(s);
       if (cur === "present") {
+        const t = nowClock();
         await applyStudentState(id, state.mode === "late" ? "late" : "absent", false);
+        if (state.mode === "late") toast(`تم تسجيل تأخر ${s.name} — ${t}`, { type: "ok", duration: 2400 });
       } else {
         await applyStudentState(id, "present", false);
       }
@@ -574,25 +578,26 @@ export function renderAttendance(root, mode, stageId) {
         if (!ok) return;
       }
       const affected = state.students.filter(s => classNo === "all" || s.classNo === Number(classNo));
-      const prev = affected.map(s => ({ id: s.id, status: statusOf(s), excused: isExcused(s) }));
+      const prev = affected.map(s => ({ id: s.id, status: statusOf(s), excused: isExcused(s), lateTime: state.lateTimes.get(s.id) || "" }));
+      const bulkLateTime = nowClock();
       if (status === "present") {
-        for (const s of affected) { state.absent.delete(s.id); state.late.delete(s.id); state.excused.delete(s.id); }
+        for (const s of affected) { state.absent.delete(s.id); state.late.delete(s.id); state.excused.delete(s.id); state.lateTimes.delete(s.id); }
       } else if (status === "late") {
-        for (const s of affected) { state.late.add(s.id); state.absent.delete(s.id); state.excused.delete(s.id); }
+        for (const s of affected) { state.late.add(s.id); state.absent.delete(s.id); state.excused.delete(s.id); state.lateTimes.set(s.id, bulkLateTime); }
       } else {
-        for (const s of affected) { state.absent.add(s.id); state.excused.delete(s.id); }
+        for (const s of affected) { state.absent.add(s.id); state.excused.delete(s.id); state.lateTimes.delete(s.id); }
       }
       renderChips(); renderRoster(); markSaved();
       await bulkSetStatus({ date: state.today, stageId: state.stage, classNo: classNo === "all" ? null : Number(classNo), mode: state.mode, status });
       // ملاحظة: bulkSetStatus مع classNo=null يسجل كل فصول المرحلة
-      toast(`تم تسجيل ${fmt(affected.length)} طالباً ${label}.`, {
+      toast(`تم تسجيل ${fmt(affected.length)} طالباً ${label}${status === "late" ? ` — ${bulkLateTime}` : ""}.`, {
         type: "ok", action: { label: "تراجع", onClick: async () => {
           for (const p of prev) {
             const s = state.students.find(x => x.id === p.id);
             if (!s) continue;
-            if (p.status === "present") { state.absent.delete(p.id); state.late.delete(p.id); state.excused.delete(p.id); }
-            else if (p.status === "late") { state.late.add(p.id); state.absent.delete(p.id); state.excused.delete(p.id); }
-            else { state.absent.add(p.id); if (p.excused) state.excused.add(p.id); else state.excused.delete(p.id); }
+            if (p.status === "present") { state.absent.delete(p.id); state.late.delete(p.id); state.excused.delete(p.id); state.lateTimes.delete(p.id); }
+            else if (p.status === "late") { state.late.add(p.id); state.absent.delete(p.id); state.excused.delete(p.id); if (p.lateTime) state.lateTimes.set(p.id, p.lateTime); }
+            else { state.absent.add(p.id); if (p.excused) state.excused.add(p.id); else state.excused.delete(p.id); state.lateTimes.delete(p.id); }
             await setStatus({ date: state.today, studentId: p.id, stageId: s.stageId, classNo: s.classNo, mode: state.mode, status: p.status, excused: p.excused });
           }
           renderChips(); renderRoster();

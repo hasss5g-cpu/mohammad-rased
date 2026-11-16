@@ -191,6 +191,9 @@ export function hash(s) {
 }
 
 export async function pushNow(force = false) {
+  // السحابة المشتركة للقراءة الأولية فقط. الكتابة الكاملة من جهاز ناقص
+  // كانت قادرة على محو سجلات الأجهزة الأخرى؛ التزامن الحي عبر MQTT.
+  if (state.shared) return false;
   if (realtimeActive && !force) return false;
   if (!settings?.cloud?.enabled || !settings.cloud.id) return false;
   if (state.syncing) return false;
@@ -291,7 +294,7 @@ function stopTimers() {
 }
 
 const schedulePush = debounce(() => {
-  if (applyingRemote || realtimeActive) return;
+  if (applyingRemote || realtimeActive || state.shared) return;
   pushNow().catch(() => { });
 }, 500);
 
@@ -304,7 +307,7 @@ export function setRealtimeActive(active) {
     clearInterval(renewTimer);
   } else if (state.configured) {
     schedulePull();
-    if (navigator.onLine) schedulePush();
+    if (!state.shared && navigator.onLine) schedulePush();
   }
 }
 

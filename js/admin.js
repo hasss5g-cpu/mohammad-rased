@@ -4,7 +4,7 @@
 import {
   $, $$, icon, fmt, pct, escapeHtml, todayISO, addDays, formatHijri, formatHijriLong, formatGregorianLong,
   weekdayName, lastNDays, STAGES, classLabel, stageName, toCSV, download, readFileText, normalizeArabic,
-  parseHijriText, debounce, uid, displayPhone, signToken, activeTermRange, fullYearRange
+  parseHijriText, debounce, uid, displayPhone, signToken, activeTermRange, fullYearRange, waLink
 } from "./core.js";
 import {
   getSettings, saveSettings, listStudents, getStudent, saveStudent, deleteStudent, bulkPutStudents,
@@ -16,7 +16,7 @@ import {
   toast, confirmDialog, modal, avatar, field, chips
 } from "./ui.js";
 import { renderReports } from "./reports.js";
-import { renderWhatsApp, renderWhatsAppHelp } from "./whatsapp.js";
+import { renderWhatsApp, renderWhatsAppHelp, buildMessage } from "./whatsapp.js";
 import { renderSettings } from "./settings.js";
 import { renderRecurring, renderExcuses, renderNoor } from "./admin-cases.js";
 import { renderImportAbsence } from "./admin-import.js";
@@ -25,8 +25,8 @@ import { printDailyReport } from "./print.js";
 const TABS = [
   { id: "overview", label: "النظرة العامة", icon: "grid" },
   { id: "students", label: "قاعدة الطلاب", icon: "users" },
-  { id: "excused-roster", label: "طلاب ذوي الأعذار", icon: "heart" },
   { id: "records", label: "سجل الغياب", icon: "clipboard" },
+  { id: "late-log", label: "سجل التأخر", icon: "clock" },
   { id: "import-absence", label: "استيراد الغياب", icon: "upload" },
   { id: "recurring", label: "الحالات المتكررة", icon: "alert" },
   { id: "reports", label: "التقارير", icon: "chart" },
@@ -56,7 +56,7 @@ const isAuthed = (settings) => {
 export async function renderAdmin(root, tab = "overview") {
   const settings = await getSettings();
   if (!isAuthed(settings)) return renderLogin(root, settings, tab);
-  if (!TABS.some(t => t.id === tab) && tab !== "whatsapp-help") tab = "overview";
+  if (!TABS.some(t => t.id === tab) && tab !== "whatsapp-help" && tab !== "excused-roster") tab = "overview";
   root.innerHTML = `
     ${headerHTML({ compact: true, back: true })}
     <div class="admin-shell">
@@ -82,6 +82,7 @@ export async function renderAdmin(root, tab = "overview") {
   else if (tab === "students") await renderStudents(content, settings);
   else if (tab === "excused-roster") await renderExcusedRoster(content, settings);
   else if (tab === "records") await renderRecords(content, settings);
+  else if (tab === "late-log") await renderLateLog(content, settings);
   else if (tab === "import-absence") await renderImportAbsence(content, settings);
   else if (tab === "recurring") await renderRecurring(content, settings);
   else if (tab === "reports") await renderReports(content, settings);
@@ -467,6 +468,74 @@ async function renderRecords(root, settings) {
     toast("تم تسجيل الطالب حاضراً وإزالة الحالة.");
     renderRecords(root, settings);
   }));
+}
+
+/* ---------------- سجل التأخر ---------------- */
+const lateLogState = { date: todayISO() };
+
+async function renderLateLog(root, settings) {
+  const students = await listStudents({ includeInactive: true });
+  const smap = new Map(students.map(s => [s.id, s]));
+  const records = await getDayRecords(lateLogState.date, "late");
+  const rows = records
+    .filter(r => r.status === "late")
+    .map(r => ({ ...r, student: smap.get(r.studentId) }))
+    .filter(r => r.student)
+    .sort((a, b) => (a.lateAt || a.updatedAt || 0) - (b.lateAt || b.updatedAt || 0));
+  const timeOf = r => r.lateTime || (r.lateAt ? new Date(r.lateAt).toLocaleTimeString("ar-SA", { timeZone: "Asia/Riyadh", hour: "2-digit", minute: "2-digit" }) : "—");
+  const msgOf = s => buildMessage(s, lateLogState.date, "late", settings.lateMessage, settings);
+  const linkOf = s => waLink(s.phone, msgOf(s));
+  const count = rows.length;
+
+  root.innerHTML = `
+    <div class="admin-head">
+      <div><h1>سجل التأخر</h1><p>وقت وصول كل طالب متأخر، مع إرسال إشعار واتساب لولي الأمر مباشرة.</p></div>
+      <div class="admin-head-actions"><a class="btn ghost" href="#/admin/whatsapp">${icon("whatsapp", 20)} صفحة رسائل واتساب</a></div>
+    </div>
+    <div class="callout ${count ? "warn" : "ok"}" style="margin-bottom:16px">
+      ${count
+        ? `تم رصد <b>${fmt(count)}</b> طالباً متأخراً في ${escapeHtml(formatHijriLong(lateLogState.date, true))}. وقت التأخر يُسجَّل تلقائياً لحظة الضغط على زر التأخير.`
+        : `لا يوجد تأخر مسجل في ${escapeHtml(formatHijriLong(lateLogState.date, true))}. انتقل إلى صفحة التأخر وسجّل الطلاب المتأخرين، وسيظهر وقت كل طالب هنا تلقائياً.`}
+    </div>
+    <section class="section-card">
+      <div class="table-toolbar">
+        <label class="field" style="margin:0;min-width:190px"><span class="field-label">اليوم</span><input class="input" type="date" id="lateLogDate" value="${lateLogState.date}"></label>
+        <span class="badge amber">${icon("clock", 16)} ${fmt(count)} متأخر</span>
+        <div class="btn-row" style="margin-inline-start:auto">
+          <button class="btn ghost sm" id="lateCopyWa" ${count ? "" : "disabled"}>${icon("copy", 16)} نسخ روابط واتساب</button>
+          <a class="btn ghost sm" href="#/attendance/late/1">${icon("clock", 16)} تسجيل تأخر</a>
+        </div>
+      </div>
+      <div class="table-wrap" style="border:0;border-radius:0">
+        ${count ? `<table class="data-table"><thead><tr><th>#</th><th>الطالب</th><th>الفصل</th><th>وقت التأخر</th><th>الجوال</th><th>الإجراء</th></tr></thead><tbody>
+          ${rows.map((r, i) => {
+            const s = r.student;
+            const hasPhone = !!String(s.phone || "").trim();
+            return `<tr>
+              <td class="num">${fmt(i + 1)}</td>
+              <td><div class="name-cell">${avatar(s.name, s.stageId)}<div><span class="nm">${escapeHtml(s.name)}</span><span class="sub">${escapeHtml(s.studentId || "")}</span></div></div></td>
+              <td>${escapeHtml(classLabel(s.classNo, s.stageId))}</td>
+              <td><span class="badge amber">${escapeHtml(timeOf(r))}</span></td>
+              <td dir="ltr">${escapeHtml(displayPhone(s.phone) || "—")}</td>
+              <td>${hasPhone
+                ? `<a class="btn whatsapp sm" href="${escapeHtml(linkOf(s))}" target="_blank" rel="noopener">${icon("whatsapp", 16)} إرسال</a>`
+                : `<span class="badge gray">لا يوجد جوال</span>`}</td>
+            </tr>`;
+          }).join("")}
+        </tbody></table>` : emptyState({ iconName: "clock", title: "لا يوجد تأخر مسجل", text: "سجّل التأخر من صفحة الرصد ليظهر هنا مع الوقت تلقائياً." })}
+      </div>
+    </section>`;
+
+  $("#lateLogDate").addEventListener("change", e => {
+    lateLogState.date = e.target.value || todayISO();
+    renderLateLog(root, settings);
+  });
+  $("#lateCopyWa")?.addEventListener("click", async () => {
+    const lines = rows.filter(r => String(r.student.phone || "").trim()).map(r => `${r.student.name} — ${linkOf(r.student)}`).join("\n");
+    if (!lines) { toast("لا توجد أرقام جوال لهؤلاء الطلاب.", { type: "warn" }); return; }
+    try { await navigator.clipboard.writeText(lines); toast("تم نسخ روابط واتساب لجميع المتأخرين."); }
+    catch (e) { toast("تعذر النسخ من المتصفح.", { type: "error" }); }
+  });
 }
 
 /* ---------------- قاعدة الطلاب ---------------- */
