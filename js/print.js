@@ -112,10 +112,15 @@ export function printAbsenceByStage({ date, records = [], students = [], setting
   const total = byStage[1].length + byStage[2].length + byStage[3].length;
   const col = st => {
     const list = byStage[st];
+    const headRow = `<div class="sr-head"><span></span><span></span><span class="h-name">الطالب <small>الإجمالي</small></span><span title="غياب بعذر">بعذر</span><span title="غياب بدون عذر">بدون</span><span title="تأخر">تأخر</span></div>`;
     return `<section class="stage-col">
       <h3><span>${escapeHtml(stageName(st))}</span><b>${fmt(list.length)}</b></h3>
       <div class="stage-rows">
-        ${list.length ? list.map((s, i) => `<div class="sr"><span class="sr-i">${i + 1}</span><span class="sr-c">${escapeHtml(classLabel(s.classNo, s.stageId))}</span><span class="sr-n">${escapeHtml(shortName(s.name))}</span><span class="sr-d" title="عدد أيام الغياب">${fmt(Number(totals.get(s.id)?.absent || 0))}</span></div>`).join("") : `<div class="stage-empty">لا يوجد غياب</div>`}
+        ${headRow}
+        ${list.length ? list.map((s, i) => {
+          const t = totals.get(s.id) || {};
+          return `<div class="sr"><span class="sr-i">${i + 1}</span><span class="sr-c">${escapeHtml(classLabel(s.classNo, s.stageId))}</span><span class="sr-n"><span class="nm">${escapeHtml(shortName(s.name))}</span><span class="sr-t" title="إجمالي أيام الغياب">${fmt(Number(t.absent || 0))}</span></span><span class="sr-x" title="غياب بعذر">${fmt(Number(t.excused || 0))}</span><span class="sr-u" title="غياب بدون عذر">${fmt(Number(t.unexcused || 0))}</span><span class="sr-l" title="تأخر">${fmt(Number(t.late || 0))}</span></div>`;
+        }).join("") : `<div class="stage-empty">لا يوجد غياب</div>`}
       </div>
     </section>`;
   };
@@ -144,17 +149,27 @@ export function printAbsenceByStage({ date, records = [], students = [], setting
     .stage-col h3 { margin: 0; padding: 1.3mm 1.8mm; background: #0f6b4f; color: #fff; display: flex; justify-content: space-between; align-items: center; font-size: 9.2pt; }
     .stage-col h3 b { background: rgba(255,255,255,.2); border-radius: 99px; min-width: 6mm; text-align: center; padding: 0 1.2mm; font-size: 8.2pt; }
     .stage-rows { padding: .8mm 1mm; }
-    .sr { display: grid; grid-template-columns: 5.5mm 11mm minmax(0,1fr) 5.5mm; gap: .7mm; align-items: center; padding: .72mm 0; border-bottom: 1px dotted #c9d2cc; font-size: 7.8pt; line-height: 1.2; }
+    .sr-head { display: grid; grid-template-columns: 4.5mm 9mm minmax(0,1fr) 4.2mm 4.2mm 4.2mm; gap: .45mm; align-items: center; padding: .5mm .2mm; border-bottom: 1px solid #9eb0a6; background: #f0f5f1; font-size: 5.7pt; font-weight: 800; color: #40564b; text-align: center; }
+    .sr-head .h-name { text-align: right; padding-inline-start: .5mm; }
+    .sr-head small { font-weight: 500; font-size: 5pt; color: #6a7e73; }
+    .sr { display: grid; grid-template-columns: 4.5mm 9mm minmax(0,1fr) 4.2mm 4.2mm 4.2mm; gap: .45mm; align-items: center; padding: .62mm 0; border-bottom: 1px dotted #c9d2cc; font-size: 7.5pt; line-height: 1.15; }
     .sr:last-child { border-bottom: 0; }
     .sr-i { text-align: center; color: #4c5d54; font-weight: 700; }
     .sr-c { font-weight: 700; white-space: nowrap; color: #073b2d; }
-    .sr-n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 8.4pt; font-weight: 700; color: #111; }
-    .sr-d { text-align: center; font-weight: 800; color: #b3261e; font-size: 8.2pt; font-variant-numeric: tabular-nums; }
+    .sr-n { min-width: 0; display: flex; align-items: center; gap: .45mm; }
+    .sr-n .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 8.2pt; font-weight: 700; color: #111; }
+    .sr-t { flex: none; color: #b3261e; font-weight: 800; font-size: 7.2pt; font-variant-numeric: tabular-nums; }
+    .sr-x, .sr-u, .sr-l { text-align: center; font-weight: 800; font-size: 7.7pt; font-variant-numeric: tabular-nums; }
+    .sr-x { color: #a46a00; }
+    .sr-u { color: #b3261e; }
+    .sr-l { color: #12618a; }
     .stage-empty { padding: 3mm 1mm; text-align: center; color: #7a8a81; font-size: 7.5pt; }
     .stage-report.dense { gap: 2mm; }
-    .stage-report.dense .sr { font-size: 6.8pt; padding: .4mm 0; grid-template-columns: 5mm 10mm minmax(0,1fr) 5mm; }
-    .stage-report.dense .sr-n { font-size: 7.4pt; }
-    .stage-report.dense .sr-d { font-size: 7.3pt; }
+    .stage-report.dense .sr { font-size: 6.6pt; padding: .38mm 0; grid-template-columns: 4mm 8.5mm minmax(0,1fr) 3.8mm 3.8mm 3.8mm; }
+    .stage-report.dense .sr-n .nm { font-size: 7.2pt; }
+    .stage-report.dense .sr-t { font-size: 6.5pt; }
+    .stage-report.dense .sr-x, .stage-report.dense .sr-u, .stage-report.dense .sr-l { font-size: 6.8pt; }
+    .stage-report.dense .sr-head { grid-template-columns: 4mm 8.5mm minmax(0,1fr) 3.8mm 3.8mm 3.8mm; font-size: 5.2pt; }
     .stage-report.dense .stage-col h3 { padding: 1mm 1.5mm; font-size: 8pt; }
     .inline-sigs { margin-top: 4mm; font-size: 9pt; gap: 5mm; }
     .inline-sigs .sig { width: 45%; }
