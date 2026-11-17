@@ -164,7 +164,7 @@ export async function renderHome(root) {
 
   $("#printTodayAbsence")?.addEventListener("click", async () => {
     const records = await getDayRecords(today, "absence");
-    printAbsenceByStage({ date: today, records, students, settings, title: "تقرير غياب اليوم" });
+    printAbsenceByStage({ date: today, records, students, settings, totals, title: "تقرير غياب اليوم" });
   });
 
   $("#sendPrincipal")?.addEventListener("click", async () => {
