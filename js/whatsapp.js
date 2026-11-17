@@ -15,6 +15,11 @@ function templateFor(mode, template) {
   if (mode === "late" && !String(template || "").includes("{lateTime}")) return DEFAULT_SETTINGS.lateMessage;
   return String(template || "");
 }
+function directLink(student, text, channel = "web") {
+  const phone = normalizePhone(student.phone);
+  if (channel === "app") return `whatsapp://send?phone=${phone}&text=${encodeURIComponent(text)}`;
+  return `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`;
+}
 
 export async function renderWhatsApp(root) {
   const settings = await getSettings();
@@ -22,7 +27,7 @@ export async function renderWhatsApp(root) {
   const smap = new Map(students.map(s => [s.id, s]));
   const state = {
     mode: "absence", date: todayISO(), selected: new Set(), template: settings.excuseMessage,
-    detected: extensionDetected, sending: false, lateTimes: new Map()
+    detected: extensionDetected, sending: false, lateTimes: new Map(), channel: "web"
   };
   const render = async () => {
     state.template = state.mode === "late" ? templateFor("late", settings.lateMessage) : settings.excuseMessage;
@@ -46,6 +51,11 @@ export async function renderWhatsApp(root) {
               <label class="field"><span class="field-label">نوع الرسالة</span>
                 <select class="input" id="waMode"><option value="absence" ${state.mode === "absence" ? "selected" : ""}>إشعار غياب</option><option value="late" ${state.mode === "late" ? "selected" : ""}>إشعار تأخر</option></select></label>
               <label class="field"><span class="field-label">التاريخ</span><input class="input" type="date" id="waDate" value="${state.date}"></label>
+              <label class="field span-2"><span class="field-label">طريقة الإرسال</span>
+                <select class="input" id="waChannel">
+                  <option value="web" ${state.channel === "web" ? "selected" : ""}>واتساب ويب — إرسال تلقائي عبر الإضافة</option>
+                  <option value="app" ${state.channel === "app" ? "selected" : ""}>تطبيق واتساب — فتح المحادثة</option>
+                </select></label>
             </div>
             <div class="copy-row" style="margin-top:10px">
               <button class="btn ghost sm" id="selectAll">تحديد الكل</button>
@@ -56,12 +66,13 @@ export async function renderWhatsApp(root) {
               ${rows.length ? rows.map(r => {
                 const text = buildMessage(r.student, state.date, state.mode, state.template, settings, r.lateTime || "");
                 const hasPhone = !!normalizePhone(r.student.phone);
+                const href = directLink(r.student, text, state.channel);
                 return `<div class="mini-row" data-wa-row="${r.studentId}">
                 <label class="wa-check"><input type="checkbox" data-wa-student="${r.studentId}" checked style="width:20px;height:20px;accent-color:#0f6b4f"></label>
                 <span class="grow"><b>${escapeHtml(r.student.name)}</b><br><span style="font-size:.72rem;color:#5d6c64">${escapeHtml(classLabel(r.student.classNo, r.student.stageId))} · ${displayPhone(r.student.phone)}</span></span>
                 <span class="badge ${state.mode === "late" ? "amber" : "red"}">${state.mode === "late" ? (r.lateTime ? `متأخر ${escapeHtml(r.lateTime)}` : "متأخر") : (r.excused ? "بعذر" : "بدون عذر")}</span>
                 ${hasPhone
-                  ? `<a class="btn whatsapp sm" data-wa-send="${r.studentId}" href="${escapeHtml(waLink(r.student.phone, text))}" target="_blank" rel="noopener">${icon("whatsapp", 16)} إرسال</a>`
+                  ? `<a class="btn whatsapp sm" data-wa-send="${r.studentId}" href="${escapeHtml(href)}" ${state.channel === "web" ? 'target="_blank" rel="noopener"' : ""}>${icon("whatsapp", 16)} ${state.channel === "app" ? "فتح التطبيق" : "إرسال"}</a>`
                   : `<span class="badge gray">لا يوجد جوال</span>`}
               </div>`;
               }).join("") : emptyState({ iconName: "check", title: "لا توجد حالات", text: "لم يتم رصد أي حالة في هذا اليوم." })}
@@ -77,12 +88,14 @@ export async function renderWhatsApp(root) {
               المتغيرات: <b>{name}</b> اسم الطالب · <b>{hijri}</b> التاريخ الهجري · <b>{gregorian}</b> الميلادي · <b>{weekday}</b> اليوم · <b>{link}</b> رابط العذر · <b>{school}</b> اسم المدرسة
             </div>
             <div class="btn-row" style="margin-top:14px">
-              <button class="btn primary" id="autoSend" ${state.detected ? "" : "disabled"}>${icon("whatsapp", 20)} إرسال تلقائي عبر الإضافة</button>
+              <button class="btn primary" id="autoSend" ${state.channel === "web" && !state.detected ? "disabled" : ""}>${icon("whatsapp", 20)} ${state.channel === "app" ? "فتح المحادثات في التطبيق" : "إرسال تلقائي عبر الإضافة"}</button>
               <button class="btn ghost" id="manualSend">${icon("external", 20)} إرسال يدوي</button>
             </div>
-            ${state.detected ? "" : `<div class="callout warn" style="margin-top:12px">الإضافة غير مثبتة أو لم تُفعّل بعد. راجع <a href="#/admin/whatsapp-help">تعليمات تركيب الإضافة</a>، أو استخدم الإرسال اليدوي.</div>`}
+            ${state.channel === "web" && !state.detected ? `<div class="callout warn" style="margin-top:12px">الإضافة غير مثبتة أو لم تُفعّل بعد. راجع <a href="#/admin/whatsapp-help">تعليمات تركيب الإضافة</a>، أو اختر <b>تطبيق واتساب</b>، أو استخدم الإرسال اليدوي.</div>` : ""}
             <div class="callout info" style="margin-top:10px;font-size:.76rem">
-              يتم الإرسال التلقائي في <b>نفس تبويب واتساب</b> دون فتح صفحة جديدة لكل طالب، بفاصل عشوائي من <b>2 إلى 5 ثوانٍ</b> بين الرسائل.
+              ${state.channel === "app"
+                ? "سيُفتح تطبيق واتساب على جهازك لكل طالب مع نص الرسالة جاهزاً. الإرسال النهائي يتم من داخل التطبيق."
+                : "يتم الإرسال التلقائي في <b>نفس تبويب واتساب</b> دون فتح صفحة جديدة لكل طالب، بفاصل عشوائي من <b>2 إلى 5 ثوانٍ</b> بين الرسائل."}
             </div>
             <div class="callout ok" style="margin-top:12px;font-size:.72rem">استخدم فواصل مريحة لتقليل احتمال تقييد رقم واتساب. الإرسال الآلي للرسائل الجماعية قد يخالف شروط واتساب.</div>
           </div>
@@ -111,6 +124,7 @@ export async function renderWhatsApp(root) {
   function bindUI() {
     const rows = () => Array.from(root.querySelectorAll("[data-wa-student]")).map(c => ({ id: c.dataset.waStudent, checked: c.checked }));
     $("#waMode").addEventListener("change", async e => { state.mode = e.target.value; state.template = state.mode === "late" ? settings.lateMessage : settings.excuseMessage; await render(); });
+    $("#waChannel").addEventListener("change", async e => { state.channel = e.target.value; await render(); });
     $("#waDate").addEventListener("change", async e => { state.date = e.target.value; await render(); });
     $("#selectAll").addEventListener("click", () => { root.querySelectorAll("[data-wa-student]").forEach(c => c.checked = true); });
     $("#selectNone").addEventListener("click", () => { root.querySelectorAll("[data-wa-student]").forEach(c => c.checked = false); });
@@ -120,13 +134,17 @@ export async function renderWhatsApp(root) {
       if (!list.length) { toast("حدد طالباً واحداً على الأقل.", { type: "warn" }); return; }
       const lines = list.map(x => {
         const s = smap.get(x.id); if (!s) return "";
-        return `${s.name} — ${waLink(s.phone, buildMessage(s, state.date, state.mode, state.template, settings))}`;
+        return `${s.name} — ${directLink(s, buildMessage(s, state.date, state.mode, state.template, settings, state.lateTimes?.get(s.id) || ""), state.channel)}`;
       }).join("\n");
       await navigator.clipboard.writeText(lines);
       toast("تم نسخ روابط واتساب إلى الحافظة.");
     });
-    $("#autoSend").addEventListener("click", async () => startAuto(rows().filter(x => x.checked), state, settings, smap));
-    $("#manualSend").addEventListener("click", () => openManual(rows().filter(x => x.checked), state, settings, smap));
+    $("#autoSend").addEventListener("click", async () => {
+      const selected = rows().filter(x => x.checked);
+      if (state.channel === "app") { openManual(selected, state, settings, smap, "app"); return; }
+      await startAuto(selected, state, settings, smap);
+    });
+    $("#manualSend").addEventListener("click", () => openManual(rows().filter(x => x.checked), state, settings, smap, state.channel));
     $("#reloadLogs").addEventListener("click", renderLogs);
     root.querySelectorAll("[data-wa-student]").forEach(c => c.addEventListener("change", () => {
       if (c.checked) state.selected.add(c.dataset.waStudent); else state.selected.delete(c.dataset.waStudent);
@@ -236,6 +254,9 @@ async function startAuto(selected, state, settings, smap) {
     if (p.status === "failed") {
       const s = smap.get(p.sid);
       if (s) await addLog({ studentId: s.id, name: s.name, phone: s.phone, mode: state.mode, date: state.date, status: "failed", detail: p.detail });
+      const l = $("#sendLog");
+      if (l) l.innerHTML += `<div style="color:#b3261e">${escapeHtml(s?.name || "")}: ${escapeHtml(p.detail || "فشل الإرسال")}</div>`;
+      toast(`فشل إرسال ${s?.name || "طالب"}: ${p.detail || "راجع واتساب ويب"}`, { type: "error", duration: 6000 });
     }
   };
   window.postMessage({ __rasidApp: "start", payload: { items, min: 2, max: 5, every: 0, extra: 0, closeTab: false } }, "*");
@@ -245,16 +266,19 @@ async function startAuto(selected, state, settings, smap) {
 function rootQuery(sel) { return document.querySelector(sel); }
 
 /* ---------------- الإرسال اليدوي ---------------- */
-function openManual(selected, state, settings, smap) {
+function openManual(selected, state, settings, smap, channel = "web") {
   if (!selected.length) { toast("حدد طالباً واحداً على الأقل.", { type: "warn" }); return; }
   const list = selected.map(x => {
     const s = smap.get(x.id); if (!s) return "";
     const text = buildMessage(s, state.date, state.mode, state.template, settings, state.lateTimes?.get(s.id) || "");
+    const href = directLink(s, text, channel);
     return `<div class="mini-row"><span class="grow"><b>${escapeHtml(s.name)}</b><br><span style="font-size:.72rem;color:#5d6c64">${displayPhone(s.phone)}</span></span>
-      <a class="btn primary sm" target="_blank" rel="noopener" href="${waLink(s.phone, text)}" data-manual="${s.id}">${icon("whatsapp", 16)} فتح</a></div>`;
+      <a class="btn primary sm" ${channel === "web" ? 'target="_blank" rel="noopener"' : ""} href="${escapeHtml(href)}" data-manual="${s.id}">${icon("whatsapp", 16)} ${channel === "app" ? "فتح التطبيق" : "فتح"}</a></div>`;
   }).join("");
   const m = modal({
-    title: "الإرسال اليدوي", subtitle: "افتح محادثة كل ولي أمر وأرسل الرسالة الجاهزة.", iconName: "whatsapp", size: "lg",
+    title: channel === "app" ? "الإرسال عبر تطبيق واتساب" : "الإرسال اليدوي",
+    subtitle: channel === "app" ? "افتح محادثة ولي الأمر في تطبيق واتساب، ثم اضغط إرسال داخل التطبيق." : "افتح محادثة كل ولي أمر وأرسل الرسالة الجاهزة.",
+    iconName: "whatsapp", size: "lg",
     body: `<div class="mini-list">${list}</div>`,
     actions: [{ label: "إغلاق", kind: "ghost" }]
   });
