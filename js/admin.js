@@ -483,8 +483,8 @@ async function renderLateLog(root, settings) {
     .filter(r => r.student)
     .sort((a, b) => (a.lateAt || a.updatedAt || 0) - (b.lateAt || b.updatedAt || 0));
   const timeOf = r => r.lateTime || (r.lateAt ? new Date(r.lateAt).toLocaleTimeString("ar-SA", { timeZone: "Asia/Riyadh", hour: "2-digit", minute: "2-digit" }) : "—");
-  const msgOf = s => buildMessage(s, lateLogState.date, "late", settings.lateMessage, settings);
-  const linkOf = s => waLink(s.phone, msgOf(s));
+  const msgOf = r => buildMessage(r.student, lateLogState.date, "late", settings.lateMessage, settings, timeOf(r));
+  const linkOf = r => waLink(r.student.phone, msgOf(r));
   const count = rows.length;
 
   root.innerHTML = `
@@ -518,7 +518,7 @@ async function renderLateLog(root, settings) {
               <td><span class="badge amber">${escapeHtml(timeOf(r))}</span></td>
               <td dir="ltr">${escapeHtml(displayPhone(s.phone) || "—")}</td>
               <td>${hasPhone
-                ? `<a class="btn whatsapp sm" href="${escapeHtml(linkOf(s))}" target="_blank" rel="noopener">${icon("whatsapp", 16)} إرسال</a>`
+                ? `<a class="btn whatsapp sm" data-late-send="${s.id}" href="${escapeHtml(linkOf(r))}" target="_blank" rel="noopener">${icon("whatsapp", 16)} إرسال</a>`
                 : `<span class="badge gray">لا يوجد جوال</span>`}</td>
             </tr>`;
           }).join("")}
@@ -531,11 +531,16 @@ async function renderLateLog(root, settings) {
     renderLateLog(root, settings);
   });
   $("#lateCopyWa")?.addEventListener("click", async () => {
-    const lines = rows.filter(r => String(r.student.phone || "").trim()).map(r => `${r.student.name} — ${linkOf(r.student)}`).join("\n");
+    const lines = rows.filter(r => String(r.student.phone || "").trim()).map(r => `${r.student.name} — ${linkOf(r)}`).join("\n");
     if (!lines) { toast("لا توجد أرقام جوال لهؤلاء الطلاب.", { type: "warn" }); return; }
     try { await navigator.clipboard.writeText(lines); toast("تم نسخ روابط واتساب لجميع المتأخرين."); }
     catch (e) { toast("تعذر النسخ من المتصفح.", { type: "error" }); }
   });
+  root.querySelectorAll("[data-late-send]").forEach(a => a.addEventListener("click", () => {
+    const tr = a.closest("tr");
+    setTimeout(() => tr?.remove(), 250);
+    toast("تم فتح واتساب لولي الأمر وإزالة الطالب من القائمة.", { type: "ok" });
+  }));
 }
 
 /* ---------------- قاعدة الطلاب ---------------- */
