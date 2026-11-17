@@ -76,16 +76,15 @@ export async function renderWhatsApp(root) {
             <div class="callout info" style="margin-top:10px;font-size:.76rem">
               المتغيرات: <b>{name}</b> اسم الطالب · <b>{hijri}</b> التاريخ الهجري · <b>{gregorian}</b> الميلادي · <b>{weekday}</b> اليوم · <b>{link}</b> رابط العذر · <b>{school}</b> اسم المدرسة
             </div>
-            <div class="form-grid" style="margin-top:12px">
-              <label class="field"><span class="field-label">أقل فاصل (ثانية)</span><input class="input" type="number" id="waMin" value="${settings.whatsapp?.min || 8}" min="3"></label>
-              <label class="field"><span class="field-label">أعلى فاصل (ثانية)</span><input class="input" type="number" id="waMax" value="${settings.whatsapp?.max || 25}" min="4"></label>
-            </div>
             <div class="btn-row" style="margin-top:14px">
               <button class="btn primary" id="autoSend" ${state.detected ? "" : "disabled"}>${icon("whatsapp", 20)} إرسال تلقائي عبر الإضافة</button>
               <button class="btn ghost" id="manualSend">${icon("external", 20)} إرسال يدوي</button>
             </div>
             ${state.detected ? "" : `<div class="callout warn" style="margin-top:12px">الإضافة غير مثبتة أو لم تُفعّل بعد. راجع <a href="#/admin/whatsapp-help">تعليمات تركيب الإضافة</a>، أو استخدم الإرسال اليدوي.</div>`}
-            <div class="callout ok" style="margin-top:12px;font-size:.72rem">استخدم فواصل مريحة (8–25 ثانية) لتقليل احتمال تقييد رقم واتساب. الإرسال الآلي للرسائل الجماعية قد يخالف شروط واتساب.</div>
+            <div class="callout info" style="margin-top:10px;font-size:.76rem">
+              يتم الإرسال التلقائي في <b>نفس تبويب واتساب</b> دون فتح صفحة جديدة لكل طالب، بفاصل عشوائي من <b>2 إلى 5 ثوانٍ</b> بين الرسائل.
+            </div>
+            <div class="callout ok" style="margin-top:12px;font-size:.72rem">استخدم فواصل مريحة لتقليل احتمال تقييد رقم واتساب. الإرسال الآلي للرسائل الجماعية قد يخالف شروط واتساب.</div>
           </div>
         </div>
       </div>
@@ -200,7 +199,7 @@ async function startAuto(selected, state, settings, smap) {
     return { sid: s.id, name: s.name, wa: normalizePhone(s.phone), text: buildMessage(s, state.date, state.mode, state.template, settings, state.lateTimes?.get(s.id) || "") };
   }).filter(x => x.wa);
   if (!items.length) { toast("لا توجد أرقام صالحة.", { type: "warn" }); return; }
-  const min = Number($("#waMin").value) || 8, max = Number($("#waMax").value) || 25;
+  const min = 2, max = 5;
   await saveSettings({ whatsapp: { ...settings.whatsapp, min, max } });
   const listEl = items.map((it, i) => `<div class="log-row" data-row="${it.sid}"><span class="ic">${icon("clock", 18)}</span><span class="grow">${escapeHtml(it.name)}</span><span class="badge gray" data-status="${it.sid}">بانتظار الدور</span></div>`).join("");
   const m = modal({
@@ -239,7 +238,7 @@ async function startAuto(selected, state, settings, smap) {
       if (s) await addLog({ studentId: s.id, name: s.name, phone: s.phone, mode: state.mode, date: state.date, status: "failed", detail: p.detail });
     }
   };
-  window.postMessage({ __rasidApp: "start", payload: { items, min, max, every: 5, extra: 45, closeTab: true } }, "*");
+  window.postMessage({ __rasidApp: "start", payload: { items, min: 2, max: 5, every: 0, extra: 0, closeTab: false } }, "*");
   toast(`بدأ إرسال ${fmt(items.length)} رسالة.`);
 }
 
