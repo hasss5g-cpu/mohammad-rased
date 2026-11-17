@@ -282,7 +282,7 @@ async function renderOverview(root, settings) {
 
     <div style="text-align:center;margin-top:22px"><a class="btn ghost" href="#/">${icon("home", 20)} العودة للرئيسية</a></div>`;
 
-  $("#printDaily")?.addEventListener("click", () => printDailyReport({ date: today, records: effectiveRecs, students, settings }));
+  $("#printDaily")?.addEventListener("click", () => printDailyReport({ date: today, records: effectiveRecs, students, settings, totals }));
 }
 
 /* ---------------- طلاب ذوي الأعذار ---------------- */
