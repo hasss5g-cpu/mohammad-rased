@@ -8,7 +8,7 @@ import {
 } from "./core.js";
 import { getSettings, listStudents, getRangeRecords, totalsByStudent, studentStats, getStudent } from "./db.js";
 import { sectionCard, emptyState, toast, field, chips, modal, copyText } from "./ui.js";
-import { printRangeReport, printStudentReport } from "./print.js";
+import { printRangeReport, printStudentReport, printAbsenceByStage } from "./print.js";
 import { buildShareLink } from "./public-reports.js";
 
 const state = {
@@ -305,6 +305,10 @@ function renderResult(root, settings, students) {
 
 function doPrint(settings, students) {
   if (!state.rows.length) { toast("اعرض التقرير أولاً.", { type: "warn" }); return; }
+  if (state.type === "detailed" && state.from === state.to && state.mode === "absence" && !state.stage && !state.classNo) {
+    printAbsenceByStage({ date: state.from, records: state.rows, students, settings });
+    return;
+  }
   const modeLabel = state.mode === "late" ? "التأخر" : state.mode === "all" ? "الغياب والتأخر" : "الغياب";
   const title = state.type === "detailed" ? `تقرير ${modeLabel} التفصيلي` : state.type === "byStudent" ? "تقرير إحصائي حسب الطالب" : "تقرير إحصائي حسب الفصل";
   let columns, rows;
