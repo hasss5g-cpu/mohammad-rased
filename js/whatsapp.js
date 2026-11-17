@@ -5,11 +5,16 @@ import {
   $, $$, icon, fmt, escapeHtml, todayISO, formatHijri, formatHijriLong, formatGregorianLong, weekdayName,
   waLink, normalizePhone, displayPhone, signToken, modeLabel, modeNoun, stageName, classLabel, downloadJSON
 } from "./core.js";
-import { getSettings, saveSettings, listStudents, getDayRecords, addLog, listLogs } from "./db.js";
+import { getSettings, saveSettings, listStudents, getDayRecords, addLog, listLogs, DEFAULT_SETTINGS } from "./db.js";
 import { sectionCard, emptyState, modal, confirmDialog, field, toast } from "./ui.js";
 
 let extensionDetected = false;
 let progressHandler = null;
+
+function templateFor(mode, template) {
+  if (mode === "late" && !String(template || "").includes("{lateTime}")) return DEFAULT_SETTINGS.lateMessage;
+  return String(template || "");
+}
 
 export async function renderWhatsApp(root) {
   const settings = await getSettings();
@@ -17,12 +22,13 @@ export async function renderWhatsApp(root) {
   const smap = new Map(students.map(s => [s.id, s]));
   const state = {
     mode: "absence", date: todayISO(), selected: new Set(), template: settings.excuseMessage,
-    detected: extensionDetected, sending: false
+    detected: extensionDetected, sending: false, lateTimes: new Map()
   };
   const render = async () => {
-    state.template = state.mode === "late" ? settings.lateMessage : settings.excuseMessage;
+    state.template = state.mode === "late" ? templateFor("late", settings.lateMessage) : settings.excuseMessage;
     const records = (await getDayRecords(state.date, state.mode)).filter(r => r.status !== "present");
     const rows = records.map(r => ({ ...r, student: smap.get(r.studentId) })).filter(r => r.student);
+    state.lateTimes = new Map(rows.map(r => [r.studentId, r.lateTime || ""]));
     state.selected = new Set(rows.map(r => r.studentId));
     root.innerHTML = `
       <div class="admin-head">
@@ -47,11 +53,18 @@ export async function renderWhatsApp(root) {
               <button class="btn ghost sm" id="copyLinks">${icon("copy", 16)} نسخ روابط واتساب</button>
             </div>
             <div class="mini-list" style="max-height:420px;overflow:auto;margin-top:12px">
-              ${rows.length ? rows.map(r => `<label class="mini-row" style="cursor:pointer">
-                <input type="checkbox" data-wa-student="${r.studentId}" checked style="width:20px;height:20px;accent-color:#0f6b4f">
+              ${rows.length ? rows.map(r => {
+                const text = buildMessage(r.student, state.date, state.mode, state.template, settings, r.lateTime || "");
+                const hasPhone = !!normalizePhone(r.student.phone);
+                return `<div class="mini-row" data-wa-row="${r.studentId}">
+                <label class="wa-check"><input type="checkbox" data-wa-student="${r.studentId}" checked style="width:20px;height:20px;accent-color:#0f6b4f"></label>
                 <span class="grow"><b>${escapeHtml(r.student.name)}</b><br><span style="font-size:.72rem;color:#5d6c64">${escapeHtml(classLabel(r.student.classNo, r.student.stageId))} · ${displayPhone(r.student.phone)}</span></span>
-                <span class="badge ${state.mode === "late" ? "amber" : "red"}">${state.mode === "late" ? "متأخر" : (r.excused ? "بعذر" : "بدون عذر")}</span>
-              </label>`).join("") : emptyState({ iconName: "check", title: "لا توجد حالات", text: "لم يتم رصد أي حالة في هذا اليوم." })}
+                <span class="badge ${state.mode === "late" ? "amber" : "red"}">${state.mode === "late" ? (r.lateTime ? `متأخر ${escapeHtml(r.lateTime)}` : "متأخر") : (r.excused ? "بعذر" : "بدون عذر")}</span>
+                ${hasPhone
+                  ? `<a class="btn whatsapp sm" data-wa-send="${r.studentId}" href="${escapeHtml(waLink(r.student.phone, text))}" target="_blank" rel="noopener">${icon("whatsapp", 16)} إرسال</a>`
+                  : `<span class="badge gray">لا يوجد جوال</span>`}
+              </div>`;
+              }).join("") : emptyState({ iconName: "check", title: "لا توجد حالات", text: "لم يتم رصد أي حالة في هذا اليوم." })}
             </div>
           </div>
         </div>
@@ -119,6 +132,13 @@ export async function renderWhatsApp(root) {
     root.querySelectorAll("[data-wa-student]").forEach(c => c.addEventListener("change", () => {
       if (c.checked) state.selected.add(c.dataset.waStudent); else state.selected.delete(c.dataset.waStudent);
     }));
+    root.querySelectorAll("[data-wa-send]").forEach(a => a.addEventListener("click", async () => {
+      const s = smap.get(a.dataset.waSend);
+      if (s) await addLog({ studentId: s.id, name: s.name, phone: s.phone, mode: state.mode, date: state.date, status: "manual" });
+      a.closest("[data-wa-row]")?.remove();
+      state.selected.delete(a.dataset.waSend);
+      toast("تم فتح واتساب لولي الأمر وإزالة الطالب من القائمة.", { type: "ok" });
+    }));
   }
 
   await render();
@@ -131,13 +151,16 @@ export function buildExcuseLink(student, date, settings) {
   const base = `${location.origin}${location.pathname}`;
   return `${base}#/excuse?sid=${encodeURIComponent(student.id)}&d=${date}&t=${token}`;
 }
-export function buildMessage(student, date, mode, template, settings) {
+export function buildMessage(student, date, mode, template, settings, lateTime = "") {
   const link = buildExcuseLink(student, date, settings);
-  return String(template || "")
+  const tpl = templateFor(mode, template);
+  return String(tpl || "")
     .replaceAll("{name}", student.name)
     .replaceAll("{hijri}", formatHijri(date))
     .replaceAll("{gregorian}", formatGregorianLong(date))
     .replaceAll("{weekday}", weekdayName(date))
+    .replaceAll("{lateTime}", lateTime || "غير محدد")
+    .replaceAll("{time}", lateTime || "غير محدد")
     .replaceAll("{link}", link)
     .replaceAll("{school}", settings.school?.name || "")
     .replaceAll("{id}", student.studentId || "")
@@ -174,7 +197,7 @@ async function startAuto(selected, state, settings, smap) {
   if (!extensionDetected) { toast("ثبّت إضافة كروم أولاً، أو استخدم الإرسال اليدوي.", { type: "warn" }); return; }
   const items = selected.map(x => {
     const s = smap.get(x.id);
-    return { sid: s.id, name: s.name, wa: normalizePhone(s.phone), text: buildMessage(s, state.date, state.mode, state.template, settings) };
+    return { sid: s.id, name: s.name, wa: normalizePhone(s.phone), text: buildMessage(s, state.date, state.mode, state.template, settings, state.lateTimes?.get(s.id) || "") };
   }).filter(x => x.wa);
   if (!items.length) { toast("لا توجد أرقام صالحة.", { type: "warn" }); return; }
   const min = Number($("#waMin").value) || 8, max = Number($("#waMax").value) || 25;
@@ -227,7 +250,7 @@ function openManual(selected, state, settings, smap) {
   if (!selected.length) { toast("حدد طالباً واحداً على الأقل.", { type: "warn" }); return; }
   const list = selected.map(x => {
     const s = smap.get(x.id); if (!s) return "";
-    const text = buildMessage(s, state.date, state.mode, state.template, settings);
+    const text = buildMessage(s, state.date, state.mode, state.template, settings, state.lateTimes?.get(s.id) || "");
     return `<div class="mini-row"><span class="grow"><b>${escapeHtml(s.name)}</b><br><span style="font-size:.72rem;color:#5d6c64">${displayPhone(s.phone)}</span></span>
       <a class="btn primary sm" target="_blank" rel="noopener" href="${waLink(s.phone, text)}" data-manual="${s.id}">${icon("whatsapp", 16)} فتح</a></div>`;
   }).join("");
@@ -239,6 +262,8 @@ function openManual(selected, state, settings, smap) {
   m.dialog.querySelectorAll("[data-manual]").forEach(a => a.addEventListener("click", async () => {
     const s = smap.get(a.dataset.manual);
     if (s) await addLog({ studentId: s.id, name: s.name, phone: s.phone, mode: state.mode, date: state.date, status: "manual" });
+    a.closest(".mini-row")?.remove();
+    toast("تم فتح واتساب لولي الأمر وإزالة الطالب من القائمة.", { type: "ok" });
   }));
 }
 
