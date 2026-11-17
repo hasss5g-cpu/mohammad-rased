@@ -88,7 +88,59 @@ export function signatures(settings, roles = ["الموجه الطلابي", "ق
   </div>`;
 }
 
+export function printAbsenceByStage({ date, records = [], students = [], settings = {}, title = "تقرير الغياب التفصيلي" } = {}) {
+  const smap = new Map(students.map(s => [s.id, s]));
+  const byStage = { 1: [], 2: [], 3: [] };
+  for (const r of records) {
+    if (r.status !== "absent") continue;
+    const s = smap.get(r.studentId);
+    if (!s) continue;
+    (byStage[s.stageId] || byStage[1]).push(s);
+  }
+  for (const st of [1, 2, 3]) {
+    byStage[st].sort((a, b) => a.classNo - b.classNo || a.name.localeCompare(b.name, "ar"));
+  }
+  const maxRows = Math.max(byStage[1].length, byStage[2].length, byStage[3].length);
+  const dense = maxRows > 42;
+  const total = byStage[1].length + byStage[2].length + byStage[3].length;
+  const col = st => {
+    const list = byStage[st];
+    return `<section class="stage-col">
+      <h3><span>${escapeHtml(stageName(st))}</span><b>${fmt(list.length)}</b></h3>
+      <div class="stage-rows">
+        ${list.length ? list.map((s, i) => `<div class="sr"><span class="sr-i">${i + 1}</span><span class="sr-c">${escapeHtml(classLabel(s.classNo, s.stageId))}</span><span class="sr-n">${escapeHtml(s.name)}</span></div>`).join("") : `<div class="stage-empty">لا يوجد غياب</div>`}
+      </div>
+    </section>`;
+  };
+  const body = `
+    <div class="notice-title">${escapeHtml(title)}</div>
+    <div class="meta-line"><span>اليوم: ${escapeHtml(weekdayName(date))}</span><span>التاريخ: ${formatHijri(date)}هـ — ${formatGregorianLong(date)}</span><span>إجمالي الغياب: ${fmt(total)}</span></div>
+    <div class="stage-report ${dense ? "dense" : ""}">
+      ${col(1)}${col(2)}${col(3)}
+    </div>
+    ${signatures(settings, ["الموجه الطلابي", "قائد المدرسة"])}`;
+  const extraCSS = `
+    .stage-report { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3mm; align-items: start; margin-top: 3mm; }
+    .stage-col { border: 1px solid #7d8d84; border-radius: 2mm; overflow: hidden; break-inside: avoid; }
+    .stage-col h3 { margin: 0; padding: 1.6mm 2mm; background: #0f6b4f; color: #fff; display: flex; justify-content: space-between; align-items: center; font-size: 9pt; }
+    .stage-col h3 b { background: rgba(255,255,255,.2); border-radius: 99px; min-width: 6mm; text-align: center; padding: 0 1.2mm; font-size: 8pt; }
+    .stage-rows { padding: 1mm 1.2mm; }
+    .sr { display: grid; grid-template-columns: 5.5mm 11mm minmax(0,1fr); gap: 1mm; align-items: center; padding: .85mm 0; border-bottom: 1px dotted #c9d2cc; font-size: 7.2pt; line-height: 1.2; }
+    .sr:last-child { border-bottom: 0; }
+    .sr-i { text-align: center; color: #4c5d54; font-weight: 700; }
+    .sr-c { font-weight: 700; white-space: nowrap; color: #073b2d; }
+    .sr-n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stage-empty { padding: 4mm 1mm; text-align: center; color: #7a8a81; font-size: 7.5pt; }
+    .stage-report.dense { gap: 2mm; }
+    .stage-report.dense .sr { font-size: 6.2pt; padding: .45mm 0; grid-template-columns: 5mm 10mm minmax(0,1fr); }
+    .stage-report.dense .stage-col h3 { padding: 1.1mm 1.5mm; font-size: 8pt; }
+    @media print { .stage-report { break-inside: avoid; } }
+  `;
+  return printDocument({ title, body, settings, extraCSS });
+}
+
 export function printDailyReport({ date, records, students, settings, mode = "absence" }) {
+  if (mode === "absence") return printAbsenceByStage({ date, records, students, settings });
   const rows = records.map((r, i) => {
     const s = students.find(x => x.id === r.studentId);
     return `<tr><td class="num">${i + 1}</td><td>${escapeHtml(s?.name || "")}</td><td>${escapeHtml(stageName(s?.stageId || r.stageId))}</td><td>${escapeHtml(classLabel(s?.classNo || r.classNo, s?.stageId || r.stageId))}</td><td>${escapeHtml(s?.studentId || "")}</td><td>${r.excused ? "بعذر" : "بدون عذر"}</td></tr>`;
