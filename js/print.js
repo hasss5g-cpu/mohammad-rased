@@ -137,11 +137,11 @@ export function printAbsenceByStage({ date, records = [], students = [], setting
       <div class="sig"><div><b>قائد المدرسة</b> / ${escapeHtml(settings?.school?.principal || "")}</div><div class="line"></div></div>
     </div>`;
   const extraCSS = `
-    @page { margin: 7mm 9mm; }
+    @page { margin: 7mm 9mm 7mm 16mm; }
     .official-head { padding-bottom: 1.5mm; margin-bottom: 2mm; }
-    .report-head-row { display: flex; align-items: center; justify-content: space-between; gap: 4mm; margin: 0 0 2mm; }
-    .report-head-row .notice-title { margin: 0; font-size: 15pt; text-align: right; }
-    .report-date { text-align: left; font-size: 8.5pt; line-height: 1.5; color: #333; }
+    .report-head-row { position: relative; display: flex; align-items: center; justify-content: flex-start; min-height: 9mm; margin: 0 0 2mm; }
+    .report-head-row .notice-title { position: absolute; inset-inline: 0; z-index: 1; margin: 0; font-size: 15pt; text-align: center; pointer-events: none; }
+    .report-date { position: relative; z-index: 2; margin-inline-start: auto; background: #fff; text-align: left; font-size: 8.5pt; line-height: 1.5; color: #333; padding-inline-start: 1mm; }
     .report-date b { color: #0b513d; font-size: 9pt; }
     .report-date span { display: block; color: #555; font-size: 8pt; }
     .stage-report { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.5mm; align-items: start; margin-top: 2mm; }
