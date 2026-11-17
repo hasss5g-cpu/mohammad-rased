@@ -1248,3 +1248,37 @@ select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csv
   .student-card.round-card .s-meta { font-size: .5rem; }
   .student-card.round-card .s-id { font-size: .44rem; }
 }
+
+/* ---------------- خط أكبر: 22px للاسم الأول ---------------- */
+.student-card.round-card .s-body { inset: 17% 4px 13px; }
+.student-card.round-card .s-meta { font-size: .56rem; }
+.student-card.round-card .s-id { font-size: .5rem; }
+@media (max-width: 900px) {
+  .students-grid.round-cards {
+    column-gap: 8px;
+    row-gap: 10px;
+    padding: 6px 4px 12px;
+  }
+  .student-card.round-card {
+    width: min(120px, 100%);
+    max-width: 120px;
+  }
+  .student-card.round-card .s-body { inset: 17% 4px 13px; }
+  .student-card.round-card .s-meta { font-size: .54rem; }
+  .student-card.round-card .s-id { font-size: .48rem; }
+}
+
+/* ---------------- مساحة أوسع للخط الكبير مع بقاء 3 دوائر ---------------- */
+@media (max-width: 900px) {
+  .students-grid.round-cards {
+    column-gap: 6px;
+    row-gap: 10px;
+    padding: 6px 3px 12px;
+  }
+  .student-card.round-card {
+    width: min(122px, 100%);
+    max-width: 122px;
+  }
+  .student-card.round-card .s-body { inset: 16% 2px 12px; }
+  .student-card.round-card .s-meta { font-size: .54rem; }
+}
