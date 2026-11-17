@@ -206,7 +206,7 @@ export async function renderSettings(root) {
       <section class="section-card span-2">
         <div class="section-head"><div class="section-title">${icon("info", 24)}<div><h2>عن النظام</h2></div></div></div>
         <div class="section-body">
-          <p class="legal">راصد — نظام رصد الغياب والتأخر اليومي. يعمل دون إنترنت، ويحفظ فوراً في المتصفح. الإصدار 3.11.0 — العام الدراسي ${escapeHtml(settings.academicYear || "1448")}هـ.</p>
+          <p class="legal">راصد — نظام رصد الغياب والتأخر اليومي. يعمل دون إنترنت، ويحفظ فوراً في المتصفح. الإصدار 3.12.0 — العام الدراسي ${escapeHtml(settings.academicYear || "1448")}هـ.</p>
           <p class="legal">مبني وفق إجراءات وزارة التعليم للتعامل مع الطلبة المتغيبين (المادتان 33 و34) ودليل قواعد السلوك والمواظبة.</p>
           <div class="btn-row" style="margin-top:12px"><a class="btn ghost" href="./guide.html" target="_blank" rel="noopener">${icon("book", 20)} دليل الاستخدام الكامل</a><a class="btn ghost" href="./whatsapp-extension.zip" download>${icon("download", 20)} تحميل إضافة واتساب</a></div>
         </div>
