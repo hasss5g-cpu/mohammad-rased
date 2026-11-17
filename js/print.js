@@ -113,27 +113,45 @@ export function printAbsenceByStage({ date, records = [], students = [], setting
     </section>`;
   };
   const body = `
-    <div class="notice-title">${escapeHtml(title)}</div>
-    <div class="meta-line"><span>اليوم: ${escapeHtml(weekdayName(date))}</span><span>التاريخ: ${formatHijri(date)}هـ — ${formatGregorianLong(date)}</span><span>إجمالي الغياب: ${fmt(total)}</span></div>
+    <div class="report-head-row">
+      <div class="notice-title">${escapeHtml(title)}</div>
+      <div class="report-date"><b>${escapeHtml(weekdayName(date))}</b> ${formatHijri(date)}هـ — ${formatGregorianLong(date)}<span>إجمالي الغياب: ${fmt(total)}</span></div>
+    </div>
     <div class="stage-report ${dense ? "dense" : ""}">
       ${col(1)}${col(2)}${col(3)}
     </div>
-    ${signatures(settings, ["الموجه الطلابي", "قائد المدرسة"])}`;
+    <div class="signatures inline-sigs">
+      <div class="sig"><div><b>وكيل شؤون الطلاب</b> / ${escapeHtml("الحسن بن عمر المعشي")}</div><div class="line"></div></div>
+      <div class="sig"><div><b>قائد المدرسة</b> / ${escapeHtml(settings?.school?.principal || "")}</div><div class="line"></div></div>
+    </div>`;
   const extraCSS = `
-    .stage-report { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3mm; align-items: start; margin-top: 3mm; }
+    @page { margin: 7mm 9mm; }
+    .official-head { padding-bottom: 1.5mm; margin-bottom: 2mm; }
+    .report-head-row { display: flex; align-items: center; justify-content: space-between; gap: 4mm; margin: 0 0 2mm; }
+    .report-head-row .notice-title { margin: 0; font-size: 15pt; text-align: right; }
+    .report-date { text-align: left; font-size: 8.5pt; line-height: 1.5; color: #333; }
+    .report-date b { color: #0b513d; font-size: 9pt; }
+    .report-date span { display: block; color: #555; font-size: 8pt; }
+    .stage-report { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.5mm; align-items: start; margin-top: 2mm; }
     .stage-col { border: 1px solid #7d8d84; border-radius: 2mm; overflow: hidden; break-inside: avoid; }
-    .stage-col h3 { margin: 0; padding: 1.6mm 2mm; background: #0f6b4f; color: #fff; display: flex; justify-content: space-between; align-items: center; font-size: 9pt; }
-    .stage-col h3 b { background: rgba(255,255,255,.2); border-radius: 99px; min-width: 6mm; text-align: center; padding: 0 1.2mm; font-size: 8pt; }
-    .stage-rows { padding: 1mm 1.2mm; }
-    .sr { display: grid; grid-template-columns: 5.5mm 11mm minmax(0,1fr); gap: 1mm; align-items: center; padding: .85mm 0; border-bottom: 1px dotted #c9d2cc; font-size: 7.2pt; line-height: 1.2; }
+    .stage-col h3 { margin: 0; padding: 1.3mm 1.8mm; background: #0f6b4f; color: #fff; display: flex; justify-content: space-between; align-items: center; font-size: 9.2pt; }
+    .stage-col h3 b { background: rgba(255,255,255,.2); border-radius: 99px; min-width: 6mm; text-align: center; padding: 0 1.2mm; font-size: 8.2pt; }
+    .stage-rows { padding: .8mm 1mm; }
+    .sr { display: grid; grid-template-columns: 5.5mm 11mm minmax(0,1fr); gap: .8mm; align-items: center; padding: .72mm 0; border-bottom: 1px dotted #c9d2cc; font-size: 7.8pt; line-height: 1.2; }
     .sr:last-child { border-bottom: 0; }
     .sr-i { text-align: center; color: #4c5d54; font-weight: 700; }
     .sr-c { font-weight: 700; white-space: nowrap; color: #073b2d; }
-    .sr-n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .stage-empty { padding: 4mm 1mm; text-align: center; color: #7a8a81; font-size: 7.5pt; }
+    .sr-n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 8.6pt; font-weight: 700; color: #111; }
+    .stage-empty { padding: 3mm 1mm; text-align: center; color: #7a8a81; font-size: 7.5pt; }
     .stage-report.dense { gap: 2mm; }
-    .stage-report.dense .sr { font-size: 6.2pt; padding: .45mm 0; grid-template-columns: 5mm 10mm minmax(0,1fr); }
-    .stage-report.dense .stage-col h3 { padding: 1.1mm 1.5mm; font-size: 8pt; }
+    .stage-report.dense .sr { font-size: 6.8pt; padding: .4mm 0; grid-template-columns: 5mm 10mm minmax(0,1fr); }
+    .stage-report.dense .sr-n { font-size: 7.5pt; }
+    .stage-report.dense .stage-col h3 { padding: 1mm 1.5mm; font-size: 8pt; }
+    .inline-sigs { margin-top: 4mm; font-size: 9pt; gap: 5mm; }
+    .inline-sigs .sig { width: 45%; }
+    .inline-sigs .sig b { color: #073b2d; }
+    .inline-sigs .line { margin-top: 7mm; }
+    .footer { margin-top: 3mm; padding-top: 1mm; }
     @media print { .stage-report { break-inside: avoid; } }
   `;
   return printDocument({ title, body, settings, extraCSS });
