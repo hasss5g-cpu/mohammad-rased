@@ -8,8 +8,9 @@ import {
 } from "./core.js";
 import {
   listStudents, getSettings, getDayMap, getSessions, setStatus, bulkSetStatus,
-  hasDemoData, clearDemoData, totalsByStudent, saveSettings, holidayInfo, getDayStats, applyExcusedRoster, listExcusedRoster
+  hasDemoData, clearDemoData, totalsByStudent, saveSettings, holidayInfo, getDayStats, applyExcusedRoster, listExcusedRoster, getDayRecords
 } from "./db.js";
+import { printAbsenceByStage } from "./print.js";
 import { headerHTML, statCard, emptyState, applySyncChip, toast, confirmDialog, modal, copyText } from "./ui.js";
 
 function navigate(hash) { location.hash = hash; }
@@ -88,6 +89,7 @@ export async function renderHome(root) {
 
       <div class="home-report">
         <button type="button" class="btn gold lg" id="sendPrincipal">${icon("whatsapp", 24)} إرسال إحصائية الغياب للمدير عبر واتساب</button>
+        <button type="button" class="btn primary lg" id="printTodayAbsence">${icon("print", 24)} طباعة تقرير غياب اليوم</button>
         <span class="legal">ملخص اليوم بالتاريخ وعدد الغائبين ونسبة الغياب لكل مرحلة.</span>
       </div>
 
@@ -159,6 +161,11 @@ export async function renderHome(root) {
     lines.push(`مدرسة ${settings.school?.name || ""}`);
     return lines.join("\n");
   }
+
+  $("#printTodayAbsence")?.addEventListener("click", async () => {
+    const records = await getDayRecords(today, "absence");
+    printAbsenceByStage({ date: today, records, students, settings, title: "تقرير غياب اليوم" });
+  });
 
   $("#sendPrincipal")?.addEventListener("click", async () => {
     const text = principalSummary();
