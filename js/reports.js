@@ -303,10 +303,11 @@ function renderResult(root, settings, students) {
     </div>`;
 }
 
-function doPrint(settings, students) {
+async function doPrint(settings, students) {
   if (!state.rows.length) { toast("اعرض التقرير أولاً.", { type: "warn" }); return; }
   if (state.type === "detailed" && state.from === state.to && state.mode === "absence" && !state.stage && !state.classNo) {
-    printAbsenceByStage({ date: state.from, records: state.rows, students, settings });
+    const totals = await totalsByStudent(activeTermRange(settings).from, state.from);
+    printAbsenceByStage({ date: state.from, records: state.rows, students, settings, totals });
     return;
   }
   const modeLabel = state.mode === "late" ? "التأخر" : state.mode === "all" ? "الغياب والتأخر" : "الغياب";
