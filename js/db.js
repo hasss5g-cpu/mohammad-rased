@@ -349,6 +349,17 @@ export async function bulkImportAttendance(records, { overwrite = true, by = "no
 function lateStamp() {
   return { at: Date.now(), time: nowClock() };
 }
+async function clearOtherMode({ date, studentId, mode, by }) {
+  const otherMode = mode === "late" ? "absence" : "late";
+  const rec = await get("attendance", attendanceId(date, studentId, otherMode));
+  if (!rec || rec.status === "present") return false;
+  await put("attendance", {
+    ...rec, status: "present", excused: false, autoExcused: false,
+    lateAt: null, lateTime: "", updatedAt: Date.now(), by
+  });
+  broadcast("changed", { store: "attendance", date, mode: otherMode });
+  return true;
+}
 export async function setStatus({ date, studentId, stageId, classNo, mode, status, excused = false, by = "recorder", demo = false }) {
   const id = attendanceId(date, studentId, mode);
   const existing = await get("attendance", id);
@@ -369,6 +380,7 @@ export async function setStatus({ date, studentId, stageId, classNo, mode, statu
     });
   }
   await markSession({ date, stageId, classNo, mode, by });
+  await clearOtherMode({ date, studentId, mode, by });
   await markPending(1);
   broadcast("changed", { store: "attendance", date, mode });
   return status;
@@ -408,9 +420,21 @@ export async function bulkSetStatus({ date, stageId, classNo, mode, status, by =
     }
   }
   if (ops.length) await bulkPut("attendance", ops);
+  const otherMode = mode === "late" ? "absence" : "late";
+  const otherMap = await getDayMap(date, otherMode);
+  const otherOps = [];
+  for (const s of students) {
+    const rec = otherMap.get(s.id);
+    if (!rec || rec.status === "present") continue;
+    otherOps.push({ ...rec, status: "present", excused: false, autoExcused: false, lateAt: null, lateTime: "", updatedAt: now, by, demo: false });
+  }
+  if (otherOps.length) {
+    await bulkPut("attendance", otherOps);
+    broadcast("changed", { store: "attendance", date, mode: otherMode });
+  }
   const cls = classNo ? [Number(classNo)] : Array.from(new Set(students.map(s => Number(s.classNo))));
   for (const c of cls) await markSession({ date, stageId, classNo: c, mode, by });
-  await markPending(ops.length || 1);
+  await markPending((ops.length + otherOps.length) || 1);
   broadcast("changed", { store: "attendance", date, mode });
   return ops.length;
 }
