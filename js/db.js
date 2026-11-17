@@ -32,7 +32,7 @@ export const DEFAULT_SETTINGS = {
   schoolWhatsApp: "",
   excuseSecret: "rased-1448-mohammed-alrashid",
   excuseMessage: "السلام عليكم ورحمة الله وبركاته،\nنود إفادتكم بأن ابنكم {name} تغيب عن المدرسة يوم {weekday} الموافق {hijri}هـ ({gregorian}).\nنأمل منكم تقديم عذر الغياب عبر الرابط التالي:\n{link}\nولكم منا جزيل الشكر والتقدير.\nمدرسة {school}",
-  lateMessage: "السلام عليكم ورحمة الله وبركاته،\nنود إفادتكم بأن ابنكم {name} تأخر عن الطابور الصباحي يوم {weekday} الموافق {hijri}هـ ({gregorian}).\nنأمل منكم متابعة انتظام ابنكم في الوقت المحدد.\nولكم منا جزيل الشكر والتقدير.\nمدرسة {school}",
+  lateMessage: "السلام عليكم ورحمة الله وبركاته،\nنود إفادتكم بأن ابنكم {name} متأخر عن المدرسة اليوم {weekday} الموافق {hijri}هـ، وحضر عند الساعة {lateTime}.\nنأمل منكم متابعة انتظام ابنكم في الوقت المحدد.\nولكم منا جزيل الشكر والتقدير.\nمدرسة {school}",
   whatsapp: { min: 8, max: 25, every: 5, extra: 45, closeTab: true },
   resolvedCases: {},
   cloud: { provider: "brewpage", ns: "", id: "", token: "", link: "", lastSync: 0, enabled: false, lastError: "" },
