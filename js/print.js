@@ -88,8 +88,15 @@ export function signatures(settings, roles = ["الموجه الطلابي", "ق
   </div>`;
 }
 
-export function printAbsenceByStage({ date, records = [], students = [], settings = {}, title = "تقرير الغياب التفصيلي" } = {}) {
+export function printAbsenceByStage({ date, records = [], students = [], settings = {}, totals = new Map(), title = "تقرير الغياب التفصيلي" } = {}) {
   const smap = new Map(students.map(s => [s.id, s]));
+  const shortName = full => {
+    const parts = String(full || "").trim().split(/\s+/).filter(Boolean);
+    if (parts.length <= 2) return parts.join(" ");
+    let family = parts[parts.length - 1];
+    if (["عبد", "حسب", "أبو", "ابو"].includes(parts[parts.length - 2])) family = `${parts[parts.length - 2]} ${family}`;
+    return [parts[0], parts[1], family].filter(Boolean).join(" ");
+  };
   const byStage = { 1: [], 2: [], 3: [] };
   for (const r of records) {
     if (r.status !== "absent") continue;
@@ -108,7 +115,7 @@ export function printAbsenceByStage({ date, records = [], students = [], setting
     return `<section class="stage-col">
       <h3><span>${escapeHtml(stageName(st))}</span><b>${fmt(list.length)}</b></h3>
       <div class="stage-rows">
-        ${list.length ? list.map((s, i) => `<div class="sr"><span class="sr-i">${i + 1}</span><span class="sr-c">${escapeHtml(classLabel(s.classNo, s.stageId))}</span><span class="sr-n">${escapeHtml(s.name)}</span></div>`).join("") : `<div class="stage-empty">لا يوجد غياب</div>`}
+        ${list.length ? list.map((s, i) => `<div class="sr"><span class="sr-i">${i + 1}</span><span class="sr-c">${escapeHtml(classLabel(s.classNo, s.stageId))}</span><span class="sr-n">${escapeHtml(shortName(s.name))}</span><span class="sr-d" title="عدد أيام الغياب">${fmt(Number(totals.get(s.id)?.absent || 0))}</span></div>`).join("") : `<div class="stage-empty">لا يوجد غياب</div>`}
       </div>
     </section>`;
   };
@@ -137,15 +144,17 @@ export function printAbsenceByStage({ date, records = [], students = [], setting
     .stage-col h3 { margin: 0; padding: 1.3mm 1.8mm; background: #0f6b4f; color: #fff; display: flex; justify-content: space-between; align-items: center; font-size: 9.2pt; }
     .stage-col h3 b { background: rgba(255,255,255,.2); border-radius: 99px; min-width: 6mm; text-align: center; padding: 0 1.2mm; font-size: 8.2pt; }
     .stage-rows { padding: .8mm 1mm; }
-    .sr { display: grid; grid-template-columns: 5.5mm 11mm minmax(0,1fr); gap: .8mm; align-items: center; padding: .72mm 0; border-bottom: 1px dotted #c9d2cc; font-size: 7.8pt; line-height: 1.2; }
+    .sr { display: grid; grid-template-columns: 5.5mm 11mm minmax(0,1fr) 5.5mm; gap: .7mm; align-items: center; padding: .72mm 0; border-bottom: 1px dotted #c9d2cc; font-size: 7.8pt; line-height: 1.2; }
     .sr:last-child { border-bottom: 0; }
     .sr-i { text-align: center; color: #4c5d54; font-weight: 700; }
     .sr-c { font-weight: 700; white-space: nowrap; color: #073b2d; }
-    .sr-n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 8.6pt; font-weight: 700; color: #111; }
+    .sr-n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 8.4pt; font-weight: 700; color: #111; }
+    .sr-d { text-align: center; font-weight: 800; color: #b3261e; font-size: 8.2pt; font-variant-numeric: tabular-nums; }
     .stage-empty { padding: 3mm 1mm; text-align: center; color: #7a8a81; font-size: 7.5pt; }
     .stage-report.dense { gap: 2mm; }
-    .stage-report.dense .sr { font-size: 6.8pt; padding: .4mm 0; grid-template-columns: 5mm 10mm minmax(0,1fr); }
-    .stage-report.dense .sr-n { font-size: 7.5pt; }
+    .stage-report.dense .sr { font-size: 6.8pt; padding: .4mm 0; grid-template-columns: 5mm 10mm minmax(0,1fr) 5mm; }
+    .stage-report.dense .sr-n { font-size: 7.4pt; }
+    .stage-report.dense .sr-d { font-size: 7.3pt; }
     .stage-report.dense .stage-col h3 { padding: 1mm 1.5mm; font-size: 8pt; }
     .inline-sigs { margin-top: 4mm; font-size: 9pt; gap: 5mm; }
     .inline-sigs .sig { width: 45%; }
@@ -157,8 +166,8 @@ export function printAbsenceByStage({ date, records = [], students = [], setting
   return printDocument({ title, body, settings, extraCSS });
 }
 
-export function printDailyReport({ date, records, students, settings, mode = "absence" }) {
-  if (mode === "absence") return printAbsenceByStage({ date, records, students, settings });
+export function printDailyReport({ date, records, students, settings, totals = new Map(), mode = "absence" }) {
+  if (mode === "absence") return printAbsenceByStage({ date, records, students, settings, totals });
   const rows = records.map((r, i) => {
     const s = students.find(x => x.id === r.studentId);
     return `<tr><td class="num">${i + 1}</td><td>${escapeHtml(s?.name || "")}</td><td>${escapeHtml(stageName(s?.stageId || r.stageId))}</td><td>${escapeHtml(classLabel(s?.classNo || r.classNo, s?.stageId || r.stageId))}</td><td>${escapeHtml(s?.studentId || "")}</td><td>${r.excused ? "بعذر" : "بدون عذر"}</td></tr>`;
