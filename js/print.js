@@ -137,7 +137,7 @@ export function printAbsenceByStage({ date, records = [], students = [], setting
       <div class="sig"><div><b>قائد المدرسة</b> / ${escapeHtml(settings?.school?.principal || "")}</div><div class="line"></div></div>
     </div>`;
   const extraCSS = `
-    @page { margin: 7mm 9mm 7mm 15mm; }
+    @page { margin: 7mm 15mm 7mm 8mm; }
     .official-head { padding-bottom: 1.5mm; margin-bottom: 2mm; }
     .report-head-row { position: relative; display: flex; align-items: center; justify-content: flex-start; min-height: 9mm; margin: 0 0 2mm; }
     .report-head-row .notice-title { position: absolute; inset-inline: 0; z-index: 1; margin: 0; font-size: 15pt; text-align: center; pointer-events: none; }
