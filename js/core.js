@@ -3,7 +3,7 @@
    ============================================================ */
 
 export const TZ = "Asia/Riyadh";
-export const APP_VERSION = "3.18.2";
+export const APP_VERSION = "3.18.3";
 
 export const STAGES = [
   { id: 1, name: "الصف الأول المتوسط", short: "أول متوسط", color: "#0f6b4f" },
