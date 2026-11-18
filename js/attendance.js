@@ -324,11 +324,16 @@ export function renderAttendance(root, mode, stageId) {
       absent: new Set(), late: new Set(), excused: new Set(), lateTimes: new Map(), autoExcused,
       undoStack: []
     };
-    for (const s of students) {
-      const r = records.get(s.id);
-      if (r?.status === "absent") { state.absent.add(s.id); if (r.excused || autoExcused.has(s.id)) state.excused.add(s.id); }
-      if (r?.status === "late") { state.late.add(s.id); if (r.lateTime) state.lateTimes.set(s.id, r.lateTime); }
+    function hydrateState(map) {
+      state.records = map;
+      state.absent.clear(); state.late.clear(); state.excused.clear(); state.lateTimes.clear();
+      for (const s of students) {
+        const r = map.get(s.id);
+        if (r?.status === "absent") { state.absent.add(s.id); if (r.excused || autoExcused.has(s.id)) state.excused.add(s.id); }
+        if (r?.status === "late") { state.late.add(s.id); if (r.lateTime) state.lateTimes.set(s.id, r.lateTime); }
+      }
     }
+    hydrateState(records);
     const stageInfo = STAGES.find(s => s.id === stage);
     const classes = Array.from(new Set(students.map(s => s.classNo))).sort((a, b) => a - b);
 
@@ -667,6 +672,26 @@ export function renderAttendance(root, mode, stageId) {
     $("#navNext").addEventListener("click", () => {
       if (stage < 3) navigate(`#/attendance/${mode}/${stage + 1}`);
     });
+    let remoteSyncBusy = false;
+    window.__rasedAttendanceSync = async () => {
+      if (remoteSyncBusy || !rosterEl?.isConnected) return;
+      remoteSyncBusy = true;
+      try {
+        const map = await getDayMap(today, mode);
+        const signature = st => JSON.stringify({
+          a: [...st.absent].sort(), l: [...st.late].sort(), e: [...st.excused].sort(),
+          t: [...st.lateTimes.entries()].sort()
+        });
+        const before = signature(state);
+        hydrateState(map);
+        if (signature(state) === before) return;
+        const y = window.scrollY;
+        renderChips(); renderRoster(); updateSummary();
+        requestAnimationFrame(() => window.scrollTo({ top: y, behavior: "auto" }));
+      } finally {
+        remoteSyncBusy = false;
+      }
+    };
     root.querySelectorAll("[data-scroll]").forEach(b => b.addEventListener("click", () => window.scrollTo({ top: b.dataset.scroll === "top" ? 0 : document.body.scrollHeight, behavior: "smooth" })));
     renderChips(); renderRoster(); updateSummary();
     resolve();
