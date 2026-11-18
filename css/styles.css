@@ -1509,3 +1509,33 @@ select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csv
   .nav-arrow svg { width: 30px; height: 30px; }
   .nav-stage { min-width: 124px; }
 }
+
+/* شريط تنقل سفلي أصغر وأقرب لنهاية الصفحة */
+.att-summary-inner {
+  justify-content: center;
+  align-items: flex-end;
+  padding: 4px 12px 3px;
+  min-height: 0;
+}
+.page-nav { gap: 10px; }
+.nav-arrow {
+  width: 46px;
+  height: 46px;
+}
+.nav-arrow svg { width: 24px; height: 24px; }
+.nav-stage { min-width: 112px; }
+.nav-stage b { font-size: .78rem; }
+.nav-stage small { font-size: .64rem; }
+@media (max-width: 900px) {
+  .att-summary-inner {
+    min-height: 0;
+    padding: 3px 10px 2px;
+    align-items: flex-end;
+  }
+  .nav-arrow {
+    width: 46px;
+    height: 46px;
+  }
+  .nav-arrow svg { width: 24px; height: 24px; }
+  .nav-stage { min-width: 108px; }
+}
