@@ -1447,3 +1447,7 @@ select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csv
   position: static;
   height: auto;
 }
+
+/* تقريب الاسم الأول ورفع بيانات الطالب */
+.student-card.round-card .s-name .n1 { top: 8%; }
+.student-card.round-card .s-meta { bottom: 7%; }
