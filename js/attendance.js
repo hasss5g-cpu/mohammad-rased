@@ -380,7 +380,6 @@ export function renderAttendance(root, mode, stageId) {
       </main>
       <div class="att-summary-bar">
         <div class="att-summary-inner">
-          <div class="summary-info" id="summaryInfo"></div>
           <div class="summary-actions page-nav" aria-label="التنقل بين المراحل">
             <button type="button" class="nav-arrow" id="navPrev" aria-label="السابق">${icon("back", 24)}</button>
             <a class="nav-stage" href="#/stage/${mode}"><b>${escapeHtml(stageInfo?.name || "")}</b><small>${stage} / 3</small></a>
