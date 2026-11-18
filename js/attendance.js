@@ -10,7 +10,7 @@ import {
   listStudents, getSettings, getDayMap, getSessions, setStatus, bulkSetStatus,
   hasDemoData, clearDemoData, totalsByStudent, saveSettings, holidayInfo, getDayStats, applyExcusedRoster, listExcusedRoster, getDayRecords
 } from "./db.js";
-import { printAbsenceByStage } from "./print.js";
+import { printAbsenceByStage, printLateByStage } from "./print.js";
 import { headerHTML, statCard, emptyState, applySyncChip, toast, confirmDialog, modal, copyText } from "./ui.js";
 
 function navigate(hash) { location.hash = hash; }
@@ -90,6 +90,7 @@ export async function renderHome(root) {
       <div class="home-report">
         <button type="button" class="btn gold lg" id="sendPrincipal">${icon("whatsapp", 24)} إرسال إحصائية الغياب للمدير عبر واتساب</button>
         <button type="button" class="btn primary lg" id="printTodayAbsence">${icon("print", 24)} طباعة تقرير غياب اليوم</button>
+        <button type="button" class="btn primary lg" id="printTodayLate">${icon("print", 24)} طباعة تقرير تأخر اليوم</button>
         <span class="legal">ملخص اليوم بالتاريخ وعدد الغائبين ونسبة الغياب لكل مرحلة.</span>
       </div>
 
@@ -165,6 +166,11 @@ export async function renderHome(root) {
   $("#printTodayAbsence")?.addEventListener("click", async () => {
     const records = await getDayRecords(today, "absence");
     printAbsenceByStage({ date: today, records, students, settings, totals, title: "تقرير غياب اليوم" });
+  });
+
+  $("#printTodayLate")?.addEventListener("click", async () => {
+    const records = await getDayRecords(today, "late");
+    printLateByStage({ date: today, records, students, settings, totals, title: "تقرير تأخر اليوم" });
   });
 
   $("#sendPrincipal")?.addEventListener("click", async () => {
