@@ -456,8 +456,8 @@ export function renderAttendance(root, mode, stageId) {
       const line2 = parts.length > 2
         ? [second, family === second ? "" : family].filter(Boolean).join(" ")
         : second;
-      const fs1 = line1.length > 12 ? 18 : line1.length > 9 ? 21 : 24;
-      const fs2 = line2.length > 18 ? 12 : line2.length > 14 ? 13.5 : 15;
+      const fs1 = line1.length > 12 ? 19 : line1.length > 9 ? 22 : 25;
+      const fs2 = line2.length > 18 ? 13 : line2.length > 14 ? 14 : 15.5;
       const nameHTML = roundCards
         ? `<span class="s-name round-name-text"><span class="n1" style="font-size:${fs1}px">${escapeHtml(line1)}</span>${line2 ? `<span class="n2" style="font-size:${fs2}px">${escapeHtml(line2)}</span>` : ""}</span>`
         : `<span class="s-name">${escapeHtml(s.name)}</span>`;
