@@ -225,6 +225,12 @@ async function boot() {
     remotePending = false;
     if (remoteObserver) { remoteObserver.disconnect(); remoteObserver = null; }
     const y = window.scrollY;
+    const path = parseHash();
+    if (/^\/attendance\/(?:absence|late)\/[123]\/?$/.test(path) && typeof window.__rasedAttendanceSync === "function") {
+      try { await window.__rasedAttendanceSync(); } catch (e) { console.warn("attendance sync", e); }
+      requestAnimationFrame(() => window.scrollTo({ top: y, behavior: "auto" }));
+      return;
+    }
     try { await route(); } catch (e) { console.warn("remote refresh", e); }
     requestAnimationFrame(() => window.scrollTo({ top: y, behavior: "auto" }));
   };
