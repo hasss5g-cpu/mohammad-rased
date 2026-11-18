@@ -353,8 +353,6 @@ export function renderAttendance(root, mode, stageId) {
               <span><i class="legend-dot excused"></i> غائب بعذر</span>
             </div>` : `<div class="att-help"><span><i class="legend-dot present"></i> حاضر</span><span><i class="legend-dot late"></i> متأخر</span></div>`}
             <h1>رصد ${modeLabel(mode)} — ${escapeHtml(stageInfo?.name || "")}</h1>
-            <p>${weekdayName(today)} ${formatGregorianLong(today)} · ${studentCount(students.length)} في ${fmt(classes.length)} فصول.
-              ${mode === "absence" ? " نقرة على الطالب: غياب بدون عذر (أحمر) · نقرتان: غياب بعذر (أصفر) · النقر على الغائب يعيده حاضراً." : " اضغط على الطالب لتسجيله متأخراً، واضغط مرة أخرى لإعادته حاضراً."} الحفظ تلقائي.</p>
           </div>
 
           <div class="att-toolbar" id="attToolbar">
