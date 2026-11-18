@@ -88,9 +88,20 @@ export async function renderHome(root) {
       </section>
 
       <div class="home-report">
-        <button type="button" class="btn gold lg" id="sendPrincipal">${icon("whatsapp", 24)} إرسال إحصائية الغياب للمدير عبر واتساب</button>
-        <button type="button" class="btn primary lg" id="printTodayAbsence">${icon("print", 24)} طباعة تقرير غياب اليوم</button>
-        <button type="button" class="btn primary lg" id="printTodayLate">${icon("print", 24)} طباعة تقرير تأخر اليوم</button>
+        <div class="home-actions-circle">
+          <button type="button" class="home-circle" id="sendPrincipal">
+            <span class="hc-icon gold">${icon("whatsapp", 32)}</span>
+            <span class="hc-label">إرسال التقرير للمدير</span>
+          </button>
+          <button type="button" class="home-circle" id="printTodayAbsence">
+            <span class="hc-icon green">${icon("print", 32)}</span>
+            <span class="hc-label">طباعة الغياب</span>
+          </button>
+          <button type="button" class="home-circle" id="printTodayLate">
+            <span class="hc-icon blue">${icon("print", 32)}</span>
+            <span class="hc-label">طباعة التأخر</span>
+          </button>
+        </div>
         <span class="legal">ملخص اليوم بالتاريخ وعدد الغائبين ونسبة الغياب لكل مرحلة.</span>
       </div>
 
@@ -367,9 +378,10 @@ export function renderAttendance(root, mode, stageId) {
       <div class="att-summary-bar">
         <div class="att-summary-inner">
           <div class="summary-info" id="summaryInfo"></div>
-          <div class="summary-actions">
-            <a class="btn ghost" href="#/stage/${mode}" id="backToStages">${icon("back", 20)}<span>المراحل</span></a>
-            <button class="btn primary lg" id="saveAndHome">${icon("save", 22)}<span>حفظ والانتقال لاختيار المراحل</span></button>
+          <div class="summary-actions page-nav" aria-label="التنقل بين المراحل">
+            <button type="button" class="nav-arrow" id="navPrev" aria-label="السابق">${icon("back", 24)}</button>
+            <a class="nav-stage" href="#/stage/${mode}"><b>${escapeHtml(stageInfo?.name || "")}</b><small>${stage} / 3</small></a>
+            <button type="button" class="nav-arrow" id="navNext" aria-label="التالي" ${stage >= 3 ? "disabled" : ""}>${icon("forward", 24)}</button>
           </div>
         </div>
       </div>
@@ -648,9 +660,12 @@ export function renderAttendance(root, mode, stageId) {
       $("#onlyMarkedBtn").classList.toggle("ghost", !state.onlyMarked);
       renderRoster();
     });
-    $("#saveAndHome").addEventListener("click", () => {
-      toast("تم حفظ رصد اليوم. اختر المرحلة التالية.");
-      navigate(`#/stage/${mode}`);
+    $("#navPrev").addEventListener("click", () => {
+      if (stage > 1) navigate(`#/attendance/${mode}/${stage - 1}`);
+      else navigate(`#/stage/${mode}`);
+    });
+    $("#navNext").addEventListener("click", () => {
+      if (stage < 3) navigate(`#/attendance/${mode}/${stage + 1}`);
     });
     root.querySelectorAll("[data-scroll]").forEach(b => b.addEventListener("click", () => window.scrollTo({ top: b.dataset.scroll === "top" ? 0 : document.body.scrollHeight, behavior: "smooth" })));
     renderChips(); renderRoster(); updateSummary();
