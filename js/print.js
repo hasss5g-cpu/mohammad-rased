@@ -181,6 +181,88 @@ export function printAbsenceByStage({ date, records = [], students = [], setting
   return printDocument({ title, body, settings, extraCSS });
 }
 
+export function printLateByStage({ date, records = [], students = [], settings = {}, totals = new Map(), title = "تقرير تأخر اليوم" } = {}) {
+  const smap = new Map(students.map(s => [s.id, s]));
+  const shortName = full => {
+    const parts = String(full || "").trim().split(/\s+/).filter(Boolean);
+    if (parts.length <= 2) return parts.join(" ");
+    let family = parts[parts.length - 1];
+    if (["عبد", "حسب", "أبو", "ابو"].includes(parts[parts.length - 2])) family = `${parts[parts.length - 2]} ${family}`;
+    return [parts[0], parts[1], family].filter(Boolean).join(" ");
+  };
+  const byStage = { 1: [], 2: [], 3: [] };
+  for (const r of records) {
+    if (r.status !== "late") continue;
+    const s = smap.get(r.studentId);
+    if (!s) continue;
+    (byStage[s.stageId] || byStage[1]).push(s);
+  }
+  for (const st of [1, 2, 3]) {
+    byStage[st].sort((a, b) => a.classNo - b.classNo || a.name.localeCompare(b.name, "ar"));
+  }
+  const maxRows = Math.max(byStage[1].length, byStage[2].length, byStage[3].length);
+  const dense = maxRows > 45;
+  const total = byStage[1].length + byStage[2].length + byStage[3].length;
+  const col = st => {
+    const list = byStage[st];
+    const headRow = `<div class="sr-head late"><span></span><span></span><span class="h-name">الطالب</span><span title="عدد مرات التأخر">مرات التأخر</span></div>`;
+    return `<section class="stage-col">
+      <h3><span>${escapeHtml(stageName(st))}</span><b>${fmt(list.length)}</b></h3>
+      <div class="stage-rows">
+        ${headRow}
+        ${list.length ? list.map((s, i) => `<div class="sr late-sr"><span class="sr-i">${i + 1}</span><span class="sr-c">${escapeHtml(classLabel(s.classNo, s.stageId))}</span><span class="sr-n"><span class="nm">${escapeHtml(shortName(s.name))}</span></span><span class="sr-t late-count" title="عدد مرات التأخر">${fmt(Number(totals.get(s.id)?.late || 0))}</span></div>`).join("") : `<div class="stage-empty">لا يوجد تأخر</div>`}
+      </div>
+    </section>`;
+  };
+  const body = `
+    <div class="report-head-row">
+      <div class="notice-title">${escapeHtml(title)}</div>
+      <div class="report-date"><b>${escapeHtml(weekdayName(date))}</b> ${formatHijri(date)}هـ — ${formatGregorianLong(date)}<span>إجمالي المتأخرين: ${fmt(total)}</span></div>
+    </div>
+    <div class="stage-report ${dense ? "dense" : ""}">
+      ${col(1)}${col(2)}${col(3)}
+    </div>
+    <div class="signatures inline-sigs">
+      <div class="sig"><div><b>وكيل شؤون الطلاب</b> / ${escapeHtml("الحسن بن عمر المعشي")}</div><div class="line"></div></div>
+      <div class="sig"><div><b>قائد المدرسة</b> / ${escapeHtml(settings?.school?.principal || "")}</div><div class="line"></div></div>
+    </div>`;
+  const extraCSS = `
+    @page { margin: 7mm 15mm 7mm 8mm; }
+    .official-head { padding-bottom: 1.5mm; margin-bottom: 2mm; }
+    .report-head-row { position: relative; display: flex; align-items: center; justify-content: flex-start; min-height: 9mm; margin: 0 0 2mm; }
+    .report-head-row .notice-title { position: absolute; inset-inline: 0; z-index: 1; margin: 0; font-size: 15pt; text-align: center; pointer-events: none; }
+    .report-date { position: relative; z-index: 2; margin-inline-start: auto; background: #fff; text-align: left; font-size: 8.5pt; line-height: 1.5; color: #333; padding-inline-start: 1mm; }
+    .report-date b { color: #0b513d; font-size: 9pt; }
+    .report-date span { display: block; color: #555; font-size: 8pt; }
+    .stage-report { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.5mm; align-items: start; margin-top: 2mm; }
+    .stage-col { border: 1px solid #7d8d84; border-radius: 2mm; overflow: hidden; break-inside: avoid; }
+    .stage-col h3 { margin: 0; padding: 1.3mm 1.8mm; background: #0f6b4f; color: #fff; display: flex; justify-content: space-between; align-items: center; font-size: 9.2pt; }
+    .stage-col h3 b { background: rgba(255,255,255,.2); border-radius: 99px; min-width: 6mm; text-align: center; padding: 0 1.2mm; font-size: 8.2pt; }
+    .stage-rows { padding: .8mm 1mm; }
+    .sr-head { display: grid; grid-template-columns: 4.5mm 9mm minmax(0,1fr) 13mm; gap: .55mm; align-items: center; padding: .5mm .2mm; border-bottom: 1px solid #9eb0a6; background: #f0f5f1; font-size: 5.8pt; font-weight: 800; color: #40564b; text-align: center; }
+    .sr-head .h-name { text-align: right; padding-inline-start: .5mm; }
+    .sr { display: grid; grid-template-columns: 4.5mm 9mm minmax(0,1fr) 13mm; gap: .55mm; align-items: center; padding: .62mm 0; border-bottom: 1px dotted #c9d2cc; font-size: 7.5pt; line-height: 1.15; }
+    .sr:last-child { border-bottom: 0; }
+    .sr-i { text-align: center; color: #4c5d54; font-weight: 700; }
+    .sr-c { font-weight: 700; white-space: nowrap; color: #073b2d; }
+    .sr-n { min-width: 0; display: flex; align-items: center; }
+    .sr-n .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 8.4pt; font-weight: 700; color: #111; }
+    .late-count { text-align: center; font-weight: 800; color: #12618a; font-size: 8.2pt; font-variant-numeric: tabular-nums; }
+    .stage-empty { padding: 3mm 1mm; text-align: center; color: #7a8a81; font-size: 7.5pt; }
+    .stage-report.dense { gap: 2mm; }
+    .stage-report.dense .sr { font-size: 6.8pt; padding: .4mm 0; grid-template-columns: 4mm 8.5mm minmax(0,1fr) 11mm; }
+    .stage-report.dense .sr-n .nm { font-size: 7.5pt; }
+    .stage-report.dense .stage-col h3 { padding: 1mm 1.5mm; font-size: 8pt; }
+    .inline-sigs { margin-top: 4mm; font-size: 9pt; gap: 5mm; }
+    .inline-sigs .sig { width: 45%; }
+    .inline-sigs .sig b { color: #073b2d; }
+    .inline-sigs .line { margin-top: 7mm; }
+    .footer { margin-top: 3mm; padding-top: 1mm; }
+    @media print { .stage-report { break-inside: avoid; } }
+  `;
+  return printDocument({ title, body, settings, extraCSS });
+}
+
 export function printDailyReport({ date, records, students, settings, totals = new Map(), mode = "absence" }) {
   if (mode === "absence") return printAbsenceByStage({ date, records, students, settings, totals });
   const rows = records.map((r, i) => {
