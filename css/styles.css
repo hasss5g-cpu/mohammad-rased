@@ -1380,3 +1380,19 @@ select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csv
   .nav-stage { min-width: 84px; }
   .nav-stage b { font-size: .72rem; }
 }
+
+/* ---------------- خط أكبر لأسماء الطلاب داخل الدوائر ---------------- */
+.student-card.round-card .s-name .n1 { font-weight: 900; line-height: .98; letter-spacing: -.2px; }
+.student-card.round-card .s-name .n2 { font-weight: 900; }
+@media (max-width: 900px) {
+  .students-grid.round-cards {
+    column-gap: 4px;
+    row-gap: 10px;
+    padding: 6px 3px 12px;
+  }
+  .student-card.round-card {
+    width: min(122px, 100%);
+    max-width: 122px;
+  }
+  .student-card.round-card .s-body { inset: 15% 2px 11px; }
+}
