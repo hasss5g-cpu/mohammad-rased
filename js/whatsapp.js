@@ -256,7 +256,8 @@ async function startAuto(selected, state, settings, smap) {
       if (s) await addLog({ studentId: s.id, name: s.name, phone: s.phone, mode: state.mode, date: state.date, status: "failed", detail: p.detail });
       const l = $("#sendLog");
       if (l) l.innerHTML += `<div style="color:#b3261e">${escapeHtml(s?.name || "")}: ${escapeHtml(p.detail || "فشل الإرسال")}</div>`;
-      toast(`فشل إرسال ${s?.name || "طالب"}: ${p.detail || "راجع واتساب ويب"}`, { type: "error", duration: 6000 });
+      const skipped = /ليس عليه واتساب/.test(p.detail || "");
+      toast(`${skipped ? "تم التخطي" : "فشل إرسال"} ${s?.name || "طالب"}: ${p.detail || "راجع واتساب ويب"}`, { type: skipped ? "warn" : "error", duration: skipped ? 2600 : 6000 });
     }
   };
   window.postMessage({ __rasidApp: "start", payload: { items, min: 2, max: 5, every: 0, extra: 0, closeTab: false } }, "*");
